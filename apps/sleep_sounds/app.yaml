@@ -1,0 +1,2 @@
+app: {id: com.appfactory.sleepsounds, name: Sleep Sounds, version: 1.0.0+1, support_email: support@example.com}
+modules: {ui: true, navigation: true, storage: true, audio: true, ads: false, billing: false, analytics: false, backend: false}
