@@ -1,3 +1,5 @@
+import 'package:just_audio/just_audio.dart';
+
 /// Playback boundary. A later Android implementation can own foreground audio.
 abstract interface class AudioGateway {
   Future<void> play(String assetPath, {bool loop = true});
@@ -16,4 +18,27 @@ final class PreviewAudioGateway implements AudioGateway {
       playingAsset = assetPath;
   @override
   Future<void> setVolume(double value) async => volume = value;
+}
+
+/// Android/iOS asset player. Lifecycle ownership remains with the app feature.
+final class JustAudioGateway implements AudioGateway {
+  JustAudioGateway() : _player = AudioPlayer();
+
+  final AudioPlayer _player;
+
+  @override
+  Future<void> pause() => _player.pause();
+
+  @override
+  Future<void> play(String assetPath, {bool loop = true}) async {
+    await _player.setLoopMode(loop ? LoopMode.one : LoopMode.off);
+    await _player.setAsset(assetPath);
+    await _player.play();
+  }
+
+  @override
+  Future<void> setVolume(double volume) =>
+      _player.setVolume(volume.clamp(0, 1).toDouble());
+
+  Future<void> dispose() => _player.dispose();
 }

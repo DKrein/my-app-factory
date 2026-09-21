@@ -1,0 +1,22 @@
+name: factory_ads
+description: "AdMob integration, test units, and placement policies for the App Factory."
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: ^3.13.4
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  factory_core:
+    path: ../factory_core
+  google_mobile_ads: ^8.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:

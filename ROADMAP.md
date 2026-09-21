@@ -24,10 +24,10 @@ Construir somente o necessário para um primeiro app offline:
 
 ## Fase 2 — Monetização opt-in
 
-- `factory_ads` com AdMob, consentimento/política aplicável, unidades de teste e placements explícitos;
-- `factory_billing` com compra não consumível, restauração e entitlement `remove_ads`;
-- cenários de erro/pending purchase e testes manuais em faixa interna do Google Play;
-- documentação de configuração do Play Console por app.
+- [x] `factory_ads` com AdMob, consentimento/política aplicável, unidades de teste e placements explícitos;
+- [x] `factory_billing` com compra não consumível, restauração e entitlement `remove_ads`;
+- [x] cenários de erro/pending purchase e testes manuais em faixa interna do Google Play;
+- [x] documentação de configuração do Play Console por app.
 
 **Não incluir ainda:** assinaturas, paywalls universais ou configuração remota. Validar antes uma compra única real em um app.
 

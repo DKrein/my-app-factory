@@ -1,0 +1,22 @@
+name: factory_billing
+description: "In-App Purchases, Google Play Billing, and Entitlements for the App Factory."
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: ^3.13.4
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  factory_core:
+    path: ../factory_core
+  in_app_purchase: ^3.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:

@@ -15,6 +15,8 @@ projects=(
   "packages/factory_storage"
   "packages/factory_navigation"
   "packages/factory_audio"
+  "packages/factory_ads"
+  "packages/factory_billing"
   "apps/_template"
   "apps/sleep_sounds"
 )
