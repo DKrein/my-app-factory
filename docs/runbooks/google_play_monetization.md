@@ -35,6 +35,25 @@ Para testar compras sem ser cobrado financeiramente:
 
 ## 2. Publicação na Faixa de Teste Interno (Internal Testing)
 
+### 2.0. Chave de assinatura (uma vez por app)
+Sem `android/key.properties` o build de release usa a chave debug, e o Play Console rejeita o `.aab`.
+
+1. Gere a chave de upload **fora do repositório** e faça backup dela (perdê-la exige um reset pelo suporte do Google):
+   ```bash
+   keytool -genkey -v -keystore ~/.keystores/sleepsounds-upload.jks \
+     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+2. Crie `apps/sleep_sounds/android/key.properties` (ignorado pelo Git):
+   ```properties
+   storeFile=/home/SEU_USUARIO/.keystores/sleepsounds-upload.jks
+   storePassword=...
+   keyAlias=upload
+   keyPassword=...
+   ```
+3. Ao criar o app no Play Console, mantenha o **Play App Signing** ativado: a chave acima é apenas a chave de upload.
+
+### 2.1. Build e envio
+
 1. No diretório do aplicativo (ex: `apps/sleep_sounds`), gere o pacote de release:
    ```bash
    flutter build appbundle --release

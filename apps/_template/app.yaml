@@ -1,0 +1,15 @@
+app:
+  id: com.appfactory.template
+  name: App Template
+  version: 1.0.0+1
+  support_email: support@example.com
+
+modules:
+  ui: true
+  navigation: true
+  storage: true
+  audio: false
+  ads: false
+  billing: false
+  analytics: false
+  backend: false

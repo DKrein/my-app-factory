@@ -6,7 +6,10 @@
 - [x] Escolher Flutter como stack inicial.
 - [x] Definir monorepo com apps independentes e pacotes opcionais.
 - [x] Definir configuração por app e separação de segredos.
-- [ ] Escolher package namespace, conta Play, política de privacidade e app piloto.
+- [x] Escolher o app piloto: Sleep Sounds.
+- [ ] Definir o package namespace Android (definitivo após a primeira publicação).
+- [ ] Criar a conta de desenvolvedor no Google Play.
+- [ ] Publicar a política de privacidade em uma URL pública.
 
 **Saída:** documentos revisados e decisões pendentes resolvidas. Não há código nesta fase.
 
@@ -14,11 +17,13 @@
 
 Construir somente o necessário para um primeiro app offline:
 
-- projeto `apps/_template` compilável;
-- `factory_core`, `factory_ui`, `factory_storage` e navegação mínima;
-- convenções de lint, formatação, testes e CI;
-- configuração manual por `app.yaml`, inicialmente validada de maneira simples;
-- um app piloto (recomendado: Sleep Sounds) com APK de teste.
+- [x] projeto `apps/_template` compilável;
+- [x] `factory_core`, `factory_ui` e `factory_storage`;
+- [ ] navegação mínima (`factory_navigation` ainda é um placeholder; os apps usam `Navigator` direto);
+- [x] convenções de lint e testes (`tooling/check.sh`);
+- [ ] CI que rode o `check.sh` e um build Android;
+- [ ] configuração manual por `app.yaml`, inicialmente validada de maneira simples (o arquivo existe, mas nada confere `app.yaml` × Gradle × `app_config.g.dart`);
+- [x] um app piloto (Sleep Sounds) com APK/AAB de teste gerado (ainda falta testar em aparelho).
 
 **Critério de saída:** criar e buildar um segundo app offline a partir do template exige apenas configuração, telas/conteúdo próprios e nenhuma cópia de infraestrutura interna.
 

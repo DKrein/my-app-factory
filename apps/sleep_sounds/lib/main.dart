@@ -30,6 +30,10 @@ const defaultRemoveAdsProduct = StoreProduct(
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await JustAudioGateway.initBackground(
+    channelId: '${AppConfig.applicationId}.audio',
+    channelName: 'Reprodução de sons',
+  );
   final storage = await SharedPreferencesStore.create();
   final ads = GoogleMobileAdsGateway();
   final billing = PlayBillingGateway(catalog: sleepSoundsCatalog);
@@ -85,6 +89,73 @@ const sounds = [
   ),
 ];
 
+class PlaybackController extends ChangeNotifier {
+  PlaybackController(this._audio);
+
+  final AudioGateway _audio;
+  Timer? _timer;
+  Sound? sound;
+  bool playing = false;
+  double volume = .7;
+  int timerMinutes = 0;
+  int remainingSeconds = 0;
+
+  Future<void> play(Sound next) async {
+    sound = next;
+    playing = true;
+    notifyListeners();
+    await _audio.play(next.asset, title: next.name);
+  }
+
+  Future<void> togglePlaying() async {
+    final current = sound;
+    if (current == null) return;
+    if (playing) {
+      playing = false;
+      notifyListeners();
+      await _audio.pause();
+    } else {
+      await play(current);
+    }
+  }
+
+  Future<void> setVolume(double value) async {
+    volume = value;
+    notifyListeners();
+    await _audio.setVolume(value);
+  }
+
+  void setTimer(int minutes) {
+    _timer?.cancel();
+    timerMinutes = minutes;
+    remainingSeconds = minutes * 60;
+    notifyListeners();
+    if (minutes > 0) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    }
+  }
+
+  void _tick() {
+    if (remainingSeconds > 1) {
+      remainingSeconds--;
+      notifyListeners();
+      return;
+    }
+    _timer?.cancel();
+    timerMinutes = 0;
+    remainingSeconds = 0;
+    playing = false;
+    notifyListeners();
+    _audio.pause();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+}
+
 class SleepSoundsApp extends StatefulWidget {
   const SleepSoundsApp({
     super.key,
@@ -105,6 +176,7 @@ class SleepSoundsApp extends StatefulWidget {
 
 class _SleepSoundsAppState extends State<SleepSoundsApp> {
   late final AudioGateway _audio;
+  late final PlaybackController _playback;
   late final KeyValueStore _storage;
   late final AdsGateway _ads;
   late final BillingGateway _billing;
@@ -119,6 +191,7 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
       _audio = JustAudioGateway();
       _internalAudio = true;
     }
+    _playback = PlaybackController(_audio);
     _storage = widget.storage ?? MemoryKeyValueStore();
     _ads = widget.ads ?? PreviewAdsGateway(initialized: true);
     _billing = widget.billing ??
@@ -130,6 +203,7 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
 
   @override
   void dispose() {
+    _playback.dispose();
     if (_internalAudio && _audio is JustAudioGateway) {
       _audio.dispose();
     }
@@ -142,7 +216,7 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
         debugShowCheckedModeBanner: false,
         theme: factoryDarkTheme(),
         home: LibraryPage(
-          audio: _audio,
+          playback: _playback,
           storage: _storage,
           ads: _ads,
           billing: _billing,
@@ -153,13 +227,13 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
 class LibraryPage extends StatefulWidget {
   const LibraryPage({
     super.key,
-    required this.audio,
+    required this.playback,
     required this.storage,
     required this.ads,
     required this.billing,
   });
 
-  final AudioGateway audio;
+  final PlaybackController playback;
   final KeyValueStore storage;
   final AdsGateway ads;
   final BillingGateway billing;
@@ -170,7 +244,6 @@ class LibraryPage extends StatefulWidget {
 
 class _LibraryPageState extends State<LibraryPage> {
   static const _favoritesStorageKey = 'favorites_sounds_v1';
-  Sound? selected;
   final favorites = <String>{};
   StreamSubscription<PurchaseEvent>? _purchaseSubscription;
 
@@ -274,20 +347,32 @@ class _LibraryPageState extends State<LibraryPage> {
                     style: TextStyle(color: FactoryColors.mutedInk),
                   ),
                   const SizedBox(height: 28),
-                  Card(
-                    child: ListTile(
-                      onTap: selected == null ? null : () => _player(selected!),
-                      leading: CircleAvatar(
-                        child: Icon(selected?.icon ?? Icons.nightlight_round),
-                      ),
-                      title: Text(selected?.name ?? 'Escolha um som'),
-                      subtitle: Text(
-                        selected == null ? 'Sua noite começa aqui' : 'Tocando agora',
-                      ),
-                      trailing: Icon(
-                        selected == null ? Icons.arrow_downward : Icons.play_arrow,
-                      ),
-                    ),
+                  ListenableBuilder(
+                    listenable: widget.playback,
+                    builder: (context, _) {
+                      final selected = widget.playback.sound;
+                      return Card(
+                        child: ListTile(
+                          onTap: selected == null ? null : _openPlayer,
+                          leading: CircleAvatar(
+                            child: Icon(selected?.icon ?? Icons.nightlight_round),
+                          ),
+                          title: Text(selected?.name ?? 'Escolha um som'),
+                          subtitle: Text(
+                            selected == null
+                                ? 'Sua noite começa aqui'
+                                : widget.playback.playing
+                                    ? 'Tocando agora'
+                                    : 'Pausado',
+                          ),
+                          trailing: Icon(
+                            selected == null
+                                ? Icons.arrow_downward
+                                : Icons.play_arrow,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 28),
                   Text(
@@ -335,8 +420,8 @@ class _LibraryPageState extends State<LibraryPage> {
     return Card(
       child: InkWell(
         onTap: () {
-          setState(() => selected = sound);
-          _player(sound);
+          widget.playback.play(sound);
+          _openPlayer();
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
@@ -383,32 +468,58 @@ class _LibraryPageState extends State<LibraryPage> {
         builder: (_) => SettingsSheet(billing: widget.billing),
       );
 
-  Future<void> _player(Sound sound) async {
-    await widget.audio.play(sound.asset);
-    if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: FactoryColors.surfaceElevated,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => PlayerSheet(sound: sound, audio: widget.audio),
-    );
-  }
+  void _openPlayer() => showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: FactoryColors.surfaceElevated,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (_) => PlayerSheet(playback: widget.playback),
+      );
 }
 
-class SettingsSheet extends StatelessWidget {
+
+class SettingsSheet extends StatefulWidget {
   const SettingsSheet({super.key, required this.billing});
 
   final BillingGateway billing;
 
   @override
+  State<SettingsSheet> createState() => _SettingsSheetState();
+}
+
+class _SettingsSheetState extends State<SettingsSheet> {
+  StoreProduct? _product;
+  bool _productLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProduct();
+  }
+
+  Future<void> _loadProduct() async {
+    final result = await widget.billing.queryProducts(
+      {AppConfig.removeAdsProductId},
+    );
+    if (!mounted) return;
+    setState(() {
+      _productLoaded = true;
+      if (result is Success<List<StoreProduct>> && result.value.isNotEmpty) {
+        _product = result.value.first;
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final billing = widget.billing;
     return ListenableBuilder(
       listenable: billing.entitlements,
       builder: (context, _) {
         final isPremium = billing.entitlements.has(FactoryEntitlements.removeAds);
+        final product = _product;
 
         return SafeArea(
           child: SingleChildScrollView(
@@ -440,18 +551,13 @@ class SettingsSheet extends StatelessWidget {
                     trailing: isPremium
                         ? const Icon(Icons.check, color: FactoryColors.mist)
                         : TextButton(
-                            onPressed: () async {
-                              final productsResult = await billing.queryProducts(
-                                {AppConfig.removeAdsProductId},
-                              );
-                              final product = (productsResult is Success<List<StoreProduct>> &&
-                                      productsResult.value.isNotEmpty)
-                                  ? productsResult.value.first
-                                  : defaultRemoveAdsProduct;
-
-                              await billing.buyNonConsumable(product);
-                            },
-                            child: const Text('R\$ 9,90'),
+                            onPressed: product == null
+                                ? null
+                                : () => billing.buyNonConsumable(product),
+                            child: Text(
+                              product?.price ??
+                                  (_productLoaded ? 'Indisponível' : '...'),
+                            ),
                           ),
                   ),
                 ),
@@ -479,59 +585,10 @@ class SettingsSheet extends StatelessWidget {
   }
 }
 
-class PlayerSheet extends StatefulWidget {
-  const PlayerSheet({super.key, required this.sound, required this.audio});
+class PlayerSheet extends StatelessWidget {
+  const PlayerSheet({super.key, required this.playback});
 
-  final Sound sound;
-  final AudioGateway audio;
-
-  @override
-  State<PlayerSheet> createState() => _PlayerSheetState();
-}
-
-class _PlayerSheetState extends State<PlayerSheet> {
-  bool playing = true;
-  int timerMinutes = 0;
-  int remainingSeconds = 0;
-  Timer? _countdownTimer;
-  double volume = .7;
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    super.dispose();
-  }
-
-  void _onTimerSelected(int minutes) {
-    _countdownTimer?.cancel();
-    setState(() {
-      timerMinutes = minutes;
-      remainingSeconds = minutes * 60;
-    });
-
-    if (minutes > 0) {
-      _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-
-        if (remainingSeconds <= 1) {
-          timer.cancel();
-          widget.audio.pause();
-          setState(() {
-            playing = false;
-            timerMinutes = 0;
-            remainingSeconds = 0;
-          });
-        } else {
-          setState(() {
-            remainingSeconds--;
-          });
-        }
-      });
-    }
-  }
+  final PlaybackController playback;
 
   String _formatTime(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
@@ -540,65 +597,61 @@ class _PlayerSheetState extends State<PlayerSheet> {
   }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 52,
-                backgroundColor: widget.sound.color.withValues(alpha: .25),
-                child: Icon(widget.sound.icon, size: 52, color: widget.sound.color),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                widget.sound.name,
-                style: Theme.of(context).textTheme.displaySmall,
-              ),
-              const SizedBox(height: 8),
-              if (remainingSeconds > 0)
-                Text(
-                  'Desligando em: ${_formatTime(remainingSeconds)}',
-                  style: const TextStyle(
-                    color: FactoryColors.mist,
-                    fontWeight: FontWeight.w600,
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: playback,
+        builder: (context, _) {
+          final sound = playback.sound!;
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 52,
+                    backgroundColor: sound.color.withValues(alpha: .25),
+                    child: Icon(sound.icon, size: 52, color: sound.color),
                   ),
-                ),
-              const SizedBox(height: 16),
-              IconButton.filled(
-                onPressed: () async {
-                  if (playing) {
-                    await widget.audio.pause();
-                  } else {
-                    await widget.audio.play(widget.sound.asset);
-                  }
-                  if (mounted) setState(() => playing = !playing);
-                },
-                icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-                tooltip: playing ? 'Pausar' : 'Tocar',
-              ),
-              Slider(
-                value: volume,
-                onChanged: (v) {
-                  widget.audio.setVolume(v);
-                  setState(() => volume = v);
-                },
-              ),
-              Wrap(
-                spacing: 8,
-                children: [0, 15, 30, 45, 60]
-                    .map(
-                      (m) => ChoiceChip(
-                        label: Text(m == 0 ? 'Sem timer' : '$m min'),
-                        selected: timerMinutes == m,
-                        onSelected: (_) => _onTimerSelected(m),
+                  const SizedBox(height: 16),
+                  Text(
+                    sound.name,
+                    style: Theme.of(context).textTheme.displaySmall,
+                  ),
+                  const SizedBox(height: 8),
+                  if (playback.remainingSeconds > 0)
+                    Text(
+                      'Desligando em: ${_formatTime(playback.remainingSeconds)}',
+                      style: const TextStyle(
+                        color: FactoryColors.mist,
+                        fontWeight: FontWeight.w600,
                       ),
-                    )
-                    .toList(),
+                    ),
+                  const SizedBox(height: 16),
+                  IconButton.filled(
+                    onPressed: playback.togglePlaying,
+                    icon: Icon(playback.playing ? Icons.pause : Icons.play_arrow),
+                    tooltip: playback.playing ? 'Pausar' : 'Tocar',
+                  ),
+                  Slider(
+                    value: playback.volume,
+                    onChanged: playback.setVolume,
+                  ),
+                  Wrap(
+                    spacing: 8,
+                    children: [0, 15, 30, 45, 60]
+                        .map(
+                          (m) => ChoiceChip(
+                            label: Text(m == 0 ? 'Sem timer' : '$m min'),
+                            selected: playback.timerMinutes == m,
+                            onSelected: (_) => playback.setTimer(m),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       );
 }

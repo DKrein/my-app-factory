@@ -1,30 +1,35 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:app_template/main.dart';
+import 'package:factory_storage/factory_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:app_template/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('TemplateApp renders starter page and persists counter', (tester) async {
+    final storage = MemoryKeyValueStore();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(
+      TemplateApp(storage: storage),
+    );
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    expect(find.text('App Template'), findsOneWidget);
+    expect(find.text('Bem-vindo!'), findsOneWidget);
+    expect(find.text('Ações realizadas e salvas no KeyValueStore: 0'), findsOneWidget);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Tap increment button
+    await tester.tap(find.text('Incrementar Ação'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ações realizadas e salvas no KeyValueStore: 1'), findsOneWidget);
+
+    // Verify persisted in KeyValueStore
+    final stored = await storage.readString('starter_counter');
+    expect(stored, equals('1'));
+
+    // Open About bottom sheet
+    await tester.tap(find.byIcon(Icons.info_outline));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sobre este Aplicativo'), findsOneWidget);
   });
 }
