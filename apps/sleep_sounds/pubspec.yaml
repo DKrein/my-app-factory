@@ -7,11 +7,23 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  factory_core:
+    path: ../../packages/factory_core
   factory_ui:
     path: ../../packages/factory_ui
+  factory_audio:
+    path: ../../packages/factory_audio
+  factory_storage:
+    path: ../../packages/factory_storage
+  factory_ads:
+    path: ../../packages/factory_ads
+  factory_billing:
+    path: ../../packages/factory_billing
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
 flutter:
   uses-material-design: true
+  assets:
+    - assets/audio/

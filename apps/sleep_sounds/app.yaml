@@ -1,2 +1,25 @@
-app: {id: com.appfactory.sleepsounds, name: Sleep Sounds, version: 1.0.0+1, support_email: support@example.com}
-modules: {ui: true, navigation: true, storage: true, audio: true, ads: false, billing: false, analytics: false, backend: false}
+app:
+  id: com.appfactory.sleepsounds
+  name: Sleep Sounds
+  version: 1.0.0+1
+  support_email: support@example.com
+
+modules:
+  ui: true
+  navigation: true
+  storage: true
+  audio: true
+  ads: true
+  billing: true
+  analytics: false
+  backend: false
+
+monetization:
+  ads:
+    enabled: true
+    banner_ad_unit_id: ca-app-pub-3940256099942544/6300978111
+  billing:
+    products:
+      - id: sleep_sounds_remove_ads
+        entitlements:
+          - remove_ads
