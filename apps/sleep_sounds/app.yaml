@@ -1,8 +1,9 @@
 app:
-  id: com.appfactory.sleepsounds
+  id: com.douglaskrein.sleepsounds
   name: Sleep Sounds
   version: 1.0.0+1
-  support_email: support@example.com
+  support_email: contact@douglaskrein.com
+  privacy_policy_url: https://douglaskrein.com/projects/sleep-sounds/privacy-policy
 
 modules:
   ui: true

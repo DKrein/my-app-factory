@@ -1,4 +1,4 @@
-package com.appfactory.sleep_sounds
+package com.douglaskrein.sleep_sounds
 
 import com.ryanheise.audioservice.AudioServiceActivity
 

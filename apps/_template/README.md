@@ -24,6 +24,7 @@ Ele já vem pré-configurado com a arquitetura offline-first da fábrica:
      name: Novo App
      version: 1.0.0+1
      support_email: suporte@exemplo.com
+     privacy_policy_url: https://exemplo.com/privacidade
 
    modules:
      ui: true

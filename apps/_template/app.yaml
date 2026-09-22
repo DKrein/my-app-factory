@@ -3,6 +3,7 @@ app:
   name: App Template
   version: 1.0.0+1
   support_email: support@example.com
+  privacy_policy_url: https://example.com/privacy
 
 modules:
   ui: true

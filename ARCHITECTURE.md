@@ -97,6 +97,7 @@ app:
   name: Sleep Sounds
   version: 1.0.0+1
   support_email: support@example.com
+  privacy_policy_url: https://example.com/privacy
 
 modules:
   ui: true
@@ -114,6 +115,8 @@ monetization:
   billing:
     products: []
 ```
+
+`support_email` e `privacy_policy_url` são dados públicos exigidos pela ficha da loja e pela tela "Sobre" do app; não são segredos e por isso ficam no `app.yaml` como qualquer outro campo de identidade.
 
 Para um app com monetização, IDs públicos (por exemplo, ad unit IDs e product IDs) podem constar no YAML ou em uma configuração de ambiente não secreta. **Segredos** (keystore, token de serviço, chave de API privada) nunca entram no YAML nem no Git: ficam no cofre/CI e em arquivos locais ignorados pelo Git. Firebase usa o arquivo por plataforma tratado conforme o procedimento oficial e os requisitos do projeto.
 

@@ -7,7 +7,7 @@
 - [x] Definir monorepo com apps independentes e pacotes opcionais.
 - [x] Definir configuração por app e separação de segredos.
 - [x] Escolher o app piloto: Sleep Sounds.
-- [ ] Definir o package namespace Android (definitivo após a primeira publicação).
+- [x] Definir o package namespace Android: sempre `com.douglaskrein.[app_name]`.
 - [ ] Criar a conta de desenvolvedor no Google Play.
 - [ ] Publicar a política de privacidade em uma URL pública.
 
