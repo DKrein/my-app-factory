@@ -6,6 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sleep_sounds/main.dart';
 
+Future<void> pumpPastSplash(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 3500));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('SleepSoundsApp renders catalog, title, and initial banner', (tester) async {
     final storage = MemoryKeyValueStore();
@@ -24,13 +30,13 @@ void main() {
         billing: billing,
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpPastSplash(tester);
 
-    expect(find.text('Boa noite'), findsOneWidget);
-    expect(find.text('Chuva suave'), findsOneWidget);
-    expect(find.text('Ondas noturnas'), findsOneWidget);
-    expect(find.text('Ruído marrom'), findsOneWidget);
-    expect(find.text('Ventilador'), findsOneWidget);
+    expect(find.text('Good night'), findsOneWidget);
+    expect(find.text('Soft rain'), findsOneWidget);
+    expect(find.text('Night waves'), findsOneWidget);
+    expect(find.text('Brown noise'), findsOneWidget);
+    expect(find.text('Fan'), findsOneWidget);
 
     // Initial banner is displayed
     expect(find.text('Preview Ad [banner_home]'), findsOneWidget);
@@ -50,7 +56,7 @@ void main() {
         billing: billing,
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpPastSplash(tester);
 
     // Tap first favorite icon (favorite_border)
     final favoriteButtons = find.byIcon(Icons.favorite_border);
@@ -60,7 +66,7 @@ void main() {
 
     // Check that favorite was saved in storage
     final stored = await storage.readString('favorites_sounds_v1');
-    expect(stored, contains('Chuva suave'));
+    expect(stored, contains('Soft rain'));
 
     // Icon should now be filled favorite
     expect(find.byIcon(Icons.favorite), findsOneWidget);
@@ -88,7 +94,7 @@ void main() {
         billing: billing,
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpPastSplash(tester);
 
     expect(find.text('Preview Ad [banner_home]'), findsOneWidget);
 
@@ -96,19 +102,19 @@ void main() {
     await tester.tap(find.byIcon(Icons.tune_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('Configurações'), findsOneWidget);
-    expect(find.text('Remover Anúncios'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Remove Ads'), findsOneWidget);
 
-    // Tap purchase button R$ 9,90
-    await tester.tap(find.text(r'R$ 9,90'));
+    // Tap purchase button $2.99
+    await tester.tap(find.text(r'$2.99'));
     await tester.pumpAndSettle();
 
     // Entitlement granted
     expect(billing.entitlements.has(FactoryEntitlements.removeAds), isTrue);
-    expect(find.text('Versão Premium Ativa'), findsOneWidget);
+    expect(find.text('Premium Active'), findsOneWidget);
 
     // Close settings modal by popping navigator
-    final nav = Navigator.of(tester.element(find.text('Configurações')));
+    final nav = Navigator.of(tester.element(find.text('Settings')));
     nav.pop();
     await tester.pumpAndSettle();
 
@@ -135,30 +141,30 @@ void main() {
         billing: billing,
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpPastSplash(tester);
 
     // Tap on sound card to open player
-    await tester.tap(find.text('Chuva suave'));
+    await tester.tap(find.text('Soft rain'));
     await tester.pumpAndSettle();
 
     // Player sheet is open and audio is playing
-    expect(find.byTooltip('Pausar'), findsOneWidget);
-    expect(find.text('Sem timer'), findsOneWidget);
+    expect(find.byTooltip('Pause'), findsOneWidget);
+    expect(find.text('No timer'), findsOneWidget);
 
     // Select 15 min timer
     await tester.tap(find.text('15 min'));
     await tester.pump();
 
-    expect(find.textContaining('Desligando em: 15:00'), findsOneWidget);
+    expect(find.textContaining('Stopping in: 15:00'), findsOneWidget);
 
     // Reset timer
-    await tester.tap(find.text('Sem timer'));
+    await tester.tap(find.text('No timer'));
     await tester.pump();
 
-    expect(find.textContaining('Desligando em:'), findsNothing);
+    expect(find.textContaining('Stopping in:'), findsNothing);
 
     // Close player sheet
-    final nav = Navigator.of(tester.element(find.text('Chuva suave').last));
+    final nav = Navigator.of(tester.element(find.text('Soft rain').last));
     nav.pop();
     await tester.pumpAndSettle();
   });
@@ -182,8 +188,8 @@ void main() {
           billing: FakeBillingGateway(catalog: sleepSoundsCatalog),
         ),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Chuva suave'));
+      await pumpPastSplash(tester);
+      await tester.tap(find.text('Soft rain'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(label));
       await tester.pump();
@@ -193,7 +199,7 @@ void main() {
       await tester.tapAt(const Offset(10, 10));
       await tester.pump(const Duration(seconds: 1));
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text('Sem timer'), findsNothing);
+      expect(find.text('No timer'), findsNothing);
     }
 
     testWidgets('pauses the audio when it expires with the player closed', (tester) async {
@@ -212,12 +218,12 @@ void main() {
       await dismissPlayerSheet(tester);
       await tester.pump(const Duration(seconds: 58));
 
-      await tester.tap(find.text('Tocando agora'));
+      await tester.tap(find.text('Now playing'));
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.textContaining('Desligando em: 14:00'), findsOneWidget);
+      expect(find.textContaining('Stopping in: 14:00'), findsOneWidget);
 
-      await tester.tap(find.text('Sem timer'));
+      await tester.tap(find.text('No timer'));
       await tester.pump();
     });
 
@@ -228,9 +234,9 @@ void main() {
       await tester.tap(find.text('30 min'));
       await tester.pump(const Duration(seconds: 10));
 
-      expect(find.textContaining('Desligando em: 29:50'), findsOneWidget);
+      expect(find.textContaining('Stopping in: 29:50'), findsOneWidget);
 
-      await tester.tap(find.text('Sem timer'));
+      await tester.tap(find.text('No timer'));
       await tester.pump();
     });
   });
@@ -257,7 +263,7 @@ void main() {
           billing: billing,
         ),
       );
-      await tester.pumpAndSettle();
+      await pumpPastSplash(tester);
       await tester.tap(find.byIcon(Icons.tune_outlined));
       await tester.pumpAndSettle();
       return billing;
@@ -267,22 +273,22 @@ void main() {
       await openSettings(tester, const [
         StoreProduct(
           id: 'sleep_sounds_remove_ads',
-          title: 'Remover Anúncios',
-          description: 'Sem anúncios',
-          price: r'R$ 12,90',
+          title: 'Remove Ads',
+          description: 'No ads',
+          price: r'$3.99',
         ),
       ]);
 
-      expect(find.text(r'R$ 12,90'), findsOneWidget);
-      expect(find.text(r'R$ 9,90'), findsNothing);
+      expect(find.text(r'$3.99'), findsOneWidget);
+      expect(find.text(r'$2.99'), findsNothing);
     });
 
     testWidgets('disables the purchase when the store has no product', (tester) async {
       final billing = await openSettings(tester, const []);
 
-      expect(find.text('Indisponível'), findsOneWidget);
+      expect(find.text('Unavailable'), findsOneWidget);
 
-      await tester.tap(find.text('Indisponível'));
+      await tester.tap(find.text('Unavailable'));
       await tester.pumpAndSettle();
 
       expect(billing.entitlements.has(FactoryEntitlements.removeAds), isFalse);

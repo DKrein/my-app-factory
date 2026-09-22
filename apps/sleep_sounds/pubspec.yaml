@@ -29,6 +29,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/audio/
+    - assets/branding/icon_foreground.png
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -40,7 +41,5 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "0B1020"
-  image: "assets/branding/icon_foreground.png"
   android_12:
-    image: "assets/branding/icon_foreground.png"
     color: "0B1020"

@@ -35,10 +35,12 @@ final class JustAudioGateway implements AudioGateway {
   static Future<void> initBackground({
     required String channelId,
     required String channelName,
+    String notificationIcon = 'mipmap/ic_launcher',
   }) =>
       JustAudioBackground.init(
         androidNotificationChannelId: channelId,
         androidNotificationChannelName: channelName,
+        androidNotificationIcon: notificationIcon,
         androidNotificationOngoing: true,
       );
 

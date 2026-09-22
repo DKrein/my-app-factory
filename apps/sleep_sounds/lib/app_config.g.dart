@@ -1,6 +1,6 @@
-// GERADO a partir de app.yaml; não editar manualmente até existir o gerador.
+// GENERATED from app.yaml; do not edit by hand until the generator exists.
 abstract final class AppConfig {
-  static const name = 'Sleep Sounds';
+  static const name = 'Sleep Sounds - Sleepy Capy';
   static const applicationId = 'com.douglaskrein.sleepsounds';
   static const version = '1.0.0+1';
   static const supportEmail = 'contact@douglaskrein.com';

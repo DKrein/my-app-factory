@@ -14,17 +14,17 @@ const sleepSoundsCatalog = BillingCatalog(
     BillingProduct(
       id: AppConfig.removeAdsProductId,
       entitlements: {FactoryEntitlements.removeAds},
-      title: 'Remover Anúncios',
-      description: 'Desative todos os banners e anúncios do aplicativo.',
+      title: 'Remove Ads',
+      description: 'Turn off every banner and ad in the app.',
     ),
   ],
 );
 
 const defaultRemoveAdsProduct = StoreProduct(
   id: AppConfig.removeAdsProductId,
-  title: 'Remover Anúncios',
-  description: 'Desativa permanentemente todos os anúncios',
-  price: r'R$ 9,90',
+  title: 'Remove Ads',
+  description: 'Permanently disables all ads',
+  price: r'$2.99',
 );
 
 void main() async {
@@ -32,7 +32,8 @@ void main() async {
 
   await JustAudioGateway.initBackground(
     channelId: '${AppConfig.applicationId}.audio',
-    channelName: 'Reprodução de sons',
+    channelName: 'Sound playback',
+    notificationIcon: 'drawable/ic_launcher_monochrome',
   );
   final storage = await SharedPreferencesStore.create();
   final ads = GoogleMobileAdsGateway();
@@ -60,29 +61,29 @@ class Sound {
 
 const sounds = [
   Sound(
-    'Chuva suave',
-    'Gotas constantes em uma janela tranquila',
+    'Soft rain',
+    'Steady drops on a quiet window',
     'assets/audio/rain.ogg',
     Icons.water_drop_outlined,
     Color(0xFF7DA9E8),
   ),
   Sound(
-    'Ondas noturnas',
-    'Mar lento e distante',
+    'Night waves',
+    'Slow, distant sea',
     'assets/audio/waves.ogg',
     Icons.waves_outlined,
     Color(0xFF8ED9C7),
   ),
   Sound(
-    'Ruído marrom',
-    'Grave contínuo e aconchegante',
+    'Brown noise',
+    'Deep and steady for cozy focus',
     'assets/audio/brown.ogg',
     Icons.graphic_eq,
     Color(0xFFC7A6F5),
   ),
   Sound(
-    'Ventilador',
-    'Sopro uniforme para abafar distrações',
+    'Fan',
+    'Even airflow to mask distractions',
     'assets/audio/fan.ogg',
     Icons.air_outlined,
     Color(0xFFF1C589),
@@ -215,11 +216,106 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
         title: AppConfig.name,
         debugShowCheckedModeBanner: false,
         theme: factoryDarkTheme(),
-        home: LibraryPage(
-          playback: _playback,
+        home: AppSplashScreen(
           storage: _storage,
-          ads: _ads,
-          billing: _billing,
+          next: LibraryPage(
+            playback: _playback,
+            storage: _storage,
+            ads: _ads,
+            billing: _billing,
+          ),
+        ),
+      );
+}
+
+const splashTaglines = [
+  'Sleeping like a capybara with a full belly.',
+  "Have you ever seen a capybara complain about a bad night's sleep?",
+  'Keep calm and capy-sleep on.',
+  'Time to capybara down and drift away.',
+  'Sweet dreams, little capy-dreamer.',
+  'No worries, just capy-naps.',
+  'Life is better with a little more capy-sleep.',
+  'Let your worries float away like a sleepy capybara.',
+  'A cozy capybara is a sleepy capybara.',
+  "Tonight, we're taking it easy — capy-easy.",
+];
+
+class AppSplashScreen extends StatefulWidget {
+  const AppSplashScreen({super.key, required this.storage, required this.next});
+
+  final KeyValueStore storage;
+  final Widget next;
+
+  @override
+  State<AppSplashScreen> createState() => _AppSplashScreenState();
+}
+
+class _AppSplashScreenState extends State<AppSplashScreen> {
+  static const _taglineIndexKey = 'splash_tagline_index_v1';
+  static const _splashDuration = Duration(milliseconds: 3500);
+
+  String _tagline = splashTaglines.first;
+
+  @override
+  void initState() {
+    super.initState();
+    _pickTagline();
+    Future.delayed(_splashDuration, _goToNext);
+  }
+
+  Future<void> _pickTagline() async {
+    final stored = await widget.storage.readString(_taglineIndexKey);
+    final index = int.tryParse(stored ?? '') ?? 0;
+    if (mounted) {
+      setState(() => _tagline = splashTaglines[index % splashTaglines.length]);
+    }
+    await widget.storage.writeString(
+      _taglineIndexKey,
+      '${(index + 1) % splashTaglines.length}',
+    );
+  }
+
+  void _goToNext() {
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => widget.next),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: FactoryColors.night,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Sleepy Capy',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    color: FactoryColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Image.asset('assets/branding/icon_foreground.png', width: 200),
+                const SizedBox(height: 24),
+                Text(
+                  _tagline,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w300,
+                    color: FactoryColors.mutedInk,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
 }
@@ -288,22 +384,22 @@ class _LibraryPageState extends State<LibraryPage> {
     switch (event.status) {
       case PurchaseProgressStatus.purchased:
         messenger.showSnackBar(
-          const SnackBar(content: Text('Compra concluída! Anúncios removidos.')),
+          const SnackBar(content: Text('Purchase complete! Ads removed.')),
         );
         break;
       case PurchaseProgressStatus.restored:
         messenger.showSnackBar(
-          const SnackBar(content: Text('Compras restauradas com sucesso!')),
+          const SnackBar(content: Text('Purchases restored successfully!')),
         );
         break;
       case PurchaseProgressStatus.pending:
         messenger.showSnackBar(
-          const SnackBar(content: Text('Compra em processamento pela Play Store...')),
+          const SnackBar(content: Text('Processing purchase with Play Store...')),
         );
         break;
       case PurchaseProgressStatus.error:
         messenger.showSnackBar(
-          SnackBar(content: Text('Erro: ${event.errorMessage ?? "Falha na transação"}')),
+          SnackBar(content: Text('Error: ${event.errorMessage ?? "Transaction failed"}')),
         );
         break;
       case PurchaseProgressStatus.canceled:
@@ -330,20 +426,20 @@ class _LibraryPageState extends State<LibraryPage> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Boa noite',
+                          'Good night',
                           style: Theme.of(context).textTheme.displaySmall,
                         ),
                       ),
                       IconButton(
                         onPressed: _openSettings,
                         icon: const Icon(Icons.tune_outlined),
-                        tooltip: 'Configurações',
+                        tooltip: 'Settings',
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Escolha um som e deixe o dia baixar o volume.',
+                    'Pick a sound and let the day wind down.',
                     style: TextStyle(color: FactoryColors.mutedInk),
                   ),
                   const SizedBox(height: 28),
@@ -357,13 +453,13 @@ class _LibraryPageState extends State<LibraryPage> {
                           leading: CircleAvatar(
                             child: Icon(selected?.icon ?? Icons.nightlight_round),
                           ),
-                          title: Text(selected?.name ?? 'Escolha um som'),
+                          title: Text(selected?.name ?? 'Pick a sound'),
                           subtitle: Text(
                             selected == null
-                                ? 'Sua noite começa aqui'
+                                ? 'Your night starts here'
                                 : widget.playback.playing
-                                    ? 'Tocando agora'
-                                    : 'Pausado',
+                                    ? 'Now playing'
+                                    : 'Paused',
                           ),
                           trailing: Icon(
                             selected == null
@@ -376,7 +472,7 @@ class _LibraryPageState extends State<LibraryPage> {
                   ),
                   const SizedBox(height: 28),
                   Text(
-                    'Para desacelerar',
+                    'To wind down',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
@@ -529,7 +625,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Configurações',
+                  'Settings',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 16),
@@ -541,12 +637,12 @@ class _SettingsSheetState extends State<SettingsSheet> {
                       color: isPremium ? FactoryColors.mist : FactoryColors.moon,
                     ),
                     title: Text(
-                      isPremium ? 'Versão Premium Ativa' : 'Remover Anúncios',
+                      isPremium ? 'Premium Active' : 'Remove Ads',
                     ),
                     subtitle: Text(
                       isPremium
-                          ? 'Todos os anúncios estão desativados.'
-                          : 'Aproveite noites de sono sem distrações.',
+                          ? 'All ads are turned off.'
+                          : 'Enjoy distraction-free sleep sounds.',
                     ),
                     trailing: isPremium
                         ? const Icon(Icons.check, color: FactoryColors.mist)
@@ -556,7 +652,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                 : () => billing.buyNonConsumable(product),
                             child: Text(
                               product?.price ??
-                                  (_productLoaded ? 'Indisponível' : '...'),
+                                  (_productLoaded ? 'Unavailable' : '...'),
                             ),
                           ),
                   ),
@@ -564,7 +660,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                 const SizedBox(height: 8),
                 ListTile(
                   leading: const Icon(Icons.restore, color: FactoryColors.mutedInk),
-                  title: const Text('Restaurar compras'),
+                  title: const Text('Restore purchases'),
                   onTap: () async {
                     Navigator.of(context).pop();
                     await billing.restorePurchases();
@@ -573,8 +669,8 @@ class _SettingsSheetState extends State<SettingsSheet> {
                 const Divider(),
                 const ListTile(
                   leading: Icon(Icons.dark_mode_outlined, color: FactoryColors.mutedInk),
-                  title: Text('Tema Escuro'),
-                  subtitle: Text('Ativo por padrão para relaxamento noturno'),
+                  title: Text('Dark Theme'),
+                  subtitle: Text('On by default for nighttime relaxation'),
                 ),
               ],
             ),
@@ -620,7 +716,7 @@ class PlayerSheet extends StatelessWidget {
                   const SizedBox(height: 8),
                   if (playback.remainingSeconds > 0)
                     Text(
-                      'Desligando em: ${_formatTime(playback.remainingSeconds)}',
+                      'Stopping in: ${_formatTime(playback.remainingSeconds)}',
                       style: const TextStyle(
                         color: FactoryColors.mist,
                         fontWeight: FontWeight.w600,
@@ -630,7 +726,7 @@ class PlayerSheet extends StatelessWidget {
                   IconButton.filled(
                     onPressed: playback.togglePlaying,
                     icon: Icon(playback.playing ? Icons.pause : Icons.play_arrow),
-                    tooltip: playback.playing ? 'Pausar' : 'Tocar',
+                    tooltip: playback.playing ? 'Pause' : 'Play',
                   ),
                   Slider(
                     value: playback.volume,
@@ -641,7 +737,7 @@ class PlayerSheet extends StatelessWidget {
                     children: [0, 15, 30, 45, 60]
                         .map(
                           (m) => ChoiceChip(
-                            label: Text(m == 0 ? 'Sem timer' : '$m min'),
+                            label: Text(m == 0 ? 'No timer' : '$m min'),
                             selected: playback.timerMinutes == m,
                             onSelected: (_) => playback.setTimer(m),
                           ),

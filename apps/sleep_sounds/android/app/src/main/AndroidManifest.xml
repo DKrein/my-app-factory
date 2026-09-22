@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="Sleep Sounds"
+        android:label="Sleepy Capy"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <meta-data
