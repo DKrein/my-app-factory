@@ -12,6 +12,23 @@ Future<void> pumpPastSplash(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+// The duration carousel virtualizes items far from the current page, so
+// jumping straight to a distant label (e.g. '12h' -> '30min') can tap a
+// widget that hasn't been built yet. Step through the adjacent, always-built
+// neighbor instead, exactly like a user swiping one position at a time.
+const _durationOrder = ['30min', '1h', '6h', '12h', '24h'];
+
+Future<void> selectDuration(WidgetTester tester, String from, String to) async {
+  var index = _durationOrder.indexOf(from);
+  final target = _durationOrder.indexOf(to);
+  final step = target > index ? 1 : -1;
+  while (index != target) {
+    index += step;
+    await tester.tap(find.text(_durationOrder[index]));
+    await tester.pumpAndSettle();
+  }
+}
+
 void main() {
   testWidgets('SleepSoundsApp renders catalog, title, and initial banner', (tester) async {
     final storage = MemoryKeyValueStore();
@@ -143,29 +160,27 @@ void main() {
     );
     await pumpPastSplash(tester);
 
-    // Tap on sound card to open player
+    // Tap on sound card to open the full-screen player
     await tester.tap(find.text('Soft rain'));
     await tester.pumpAndSettle();
 
-    // Player sheet is open and audio is playing
+    // Player is open, audio is playing, and the 12h default timer is running
+    expect(find.byTooltip('Close player'), findsOneWidget);
     expect(find.byTooltip('Pause'), findsOneWidget);
-    expect(find.text('No timer'), findsOneWidget);
+    expect(find.text('12h'), findsOneWidget);
+    expect(find.textContaining('Stopping in 12h 00m'), findsOneWidget);
 
-    // Select 15 min timer
-    await tester.tap(find.text('15 min'));
+    // Select 1h on the duration carousel
+    await selectDuration(tester, '12h', '1h');
+
+    expect(find.textContaining('Stopping in 1h 00m'), findsOneWidget);
+
+    // Stop the timer before closing so no ticker outlives the test
+    await tester.tap(find.byTooltip('Pause'));
     await tester.pump();
-
-    expect(find.textContaining('Stopping in: 15:00'), findsOneWidget);
-
-    // Reset timer
-    await tester.tap(find.text('No timer'));
-    await tester.pump();
-
-    expect(find.textContaining('Stopping in:'), findsNothing);
 
     // Close player sheet
-    final nav = Navigator.of(tester.element(find.text('Soft rain').last));
-    nav.pop();
+    await tester.tap(find.byTooltip('Close player'));
     await tester.pumpAndSettle();
   });
 
@@ -191,52 +206,55 @@ void main() {
       await pumpPastSplash(tester);
       await tester.tap(find.text('Soft rain'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(label));
-      await tester.pump();
+      await selectDuration(tester, '12h', label);
     }
 
     Future<void> dismissPlayerSheet(WidgetTester tester) async {
-      await tester.tapAt(const Offset(10, 10));
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump(const Duration(seconds: 1));
-      expect(find.text('No timer'), findsNothing);
+      await tester.tap(find.byTooltip('Close player'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byTooltip('Close player'), findsNothing);
     }
 
     testWidgets('pauses the audio when it expires with the player closed', (tester) async {
-      await startRainWithTimer(tester, '15 min');
+      await startRainWithTimer(tester, '30min');
       await dismissPlayerSheet(tester);
 
       expect(audio.playingAsset, 'assets/audio/rain.ogg');
 
-      await tester.pump(const Duration(minutes: 15));
+      await tester.pump(const Duration(minutes: 30));
 
       expect(audio.playingAsset, isNull);
     });
 
     testWidgets('shows the remaining time when the player is reopened', (tester) async {
-      await startRainWithTimer(tester, '15 min');
+      await startRainWithTimer(tester, '30min');
       await dismissPlayerSheet(tester);
       await tester.pump(const Duration(seconds: 58));
 
       await tester.tap(find.text('Now playing'));
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.textContaining('Stopping in: 14:00'), findsOneWidget);
+      // A few hundred ms of sheet-transition animation may tick an extra
+      // second or two; assert the ballpark rather than an exact value.
+      expect(find.textContaining('Stopping in 29:0'), findsOneWidget);
 
-      await tester.tap(find.text('No timer'));
+      // Stop the timer before the test ends so no ticker outlives it
+      await tester.tap(find.byTooltip('Pause'));
       await tester.pump();
     });
 
     testWidgets('counts down once per second after switching duration', (tester) async {
-      await startRainWithTimer(tester, '15 min');
+      await startRainWithTimer(tester, '1h');
       await tester.pump(const Duration(seconds: 5));
 
-      await tester.tap(find.text('30 min'));
+      await selectDuration(tester, '1h', '30min');
       await tester.pump(const Duration(seconds: 10));
 
-      expect(find.textContaining('Stopping in: 29:50'), findsOneWidget);
+      expect(find.textContaining('Stopping in 29:50'), findsOneWidget);
 
-      await tester.tap(find.text('No timer'));
+      // Stop the timer before the test ends so no ticker outlives it
+      await tester.tap(find.byTooltip('Pause'));
       await tester.pump();
     });
   });

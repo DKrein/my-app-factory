@@ -18,5 +18,31 @@ void main() {
       await gateway.pause();
       expect(gateway.playingAsset, isNull);
     });
+
+    test('dispose clears state and marks the gateway disposed', () async {
+      final gateway = PreviewAudioGateway();
+      await gateway.play('assets/test.ogg');
+
+      await gateway.dispose();
+
+      expect(gateway.playingAsset, isNull);
+      expect(gateway.disposed, isTrue);
+    });
+  });
+
+  group('PreviewNowPlayingNotifier', () {
+    test('records the shown track and playing state', () async {
+      final notifier = PreviewNowPlayingNotifier();
+
+      notifier.showTrack(id: 'rain', title: 'Soft rain');
+      notifier.setPlaying(true);
+
+      expect(notifier.title, equals('Soft rain'));
+      expect(notifier.playing, isTrue);
+
+      await notifier.clear();
+      expect(notifier.title, isNull);
+      expect(notifier.cleared, isTrue);
+    });
   });
 }
