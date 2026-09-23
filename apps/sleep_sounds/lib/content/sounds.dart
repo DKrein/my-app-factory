@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
 class Sound {
-  const Sound(this.id, this.name, this.detail, this.asset, this.icon, this.color);
+  const Sound(
+    this.id,
+    this.name,
+    this.detail,
+    this.asset,
+    this.icon,
+    this.color,
+  );
   final String id, name, detail, asset;
   final IconData icon;
   final Color color;

@@ -1,7 +1,7 @@
 name: sleep_sounds
 description: Offline sleep sounds pilot for App Factory.
 publish_to: none
-version: 1.0.0+1
+version: 2026.9.22+1
 environment:
   sdk: ^3.13.4
 dependencies:
@@ -19,6 +19,11 @@ dependencies:
     path: ../../packages/factory_ads
   factory_billing:
     path: ../../packages/factory_billing
+  url_launcher: ^6.3.2
+  app_settings: ^9.0.0
+  in_app_review: ^2.0.10
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -30,6 +35,7 @@ flutter:
   assets:
     - assets/audio/
     - assets/branding/icon_foreground.png
+    - assets/branding/starfield.png
 
 flutter_launcher_icons:
   android: "launcher_icon"

@@ -27,9 +27,9 @@ class PlaybackController extends ChangeNotifier {
     required AudioGateway main,
     required AudioLayerFactory createLayer,
     NowPlayingNotifier? nowPlaying,
-  })  : _main = main,
-        _createLayer = createLayer,
-        _nowPlaying = nowPlaying;
+  }) : _main = main,
+       _createLayer = createLayer,
+       _nowPlaying = nowPlaying;
 
   final AudioGateway _main;
   final AudioLayerFactory _createLayer;
@@ -46,7 +46,8 @@ class PlaybackController extends ChangeNotifier {
   Map<String, ActiveAddon> get activeAddons => UnmodifiableMapView(_addons);
   int get activeAddonCount => _addons.length;
   bool isAddonActive(String id) => _addons.containsKey(id);
-  double addonVolume(Addon addon) => _addons[addon.id]?.volume ?? addon.defaultVolume;
+  double addonVolume(Addon addon) =>
+      _addons[addon.id]?.volume ?? addon.defaultVolume;
 
   Future<void> play(Sound next) async {
     sound = next;
@@ -118,10 +119,12 @@ class PlaybackController extends ChangeNotifier {
   }
 
   Future<void> _startAllAddonLayers() {
-    return Future.wait(_addons.values.map((entry) async {
-      await entry.gateway.setVolume(entry.volume);
-      await entry.gateway.play(entry.addon.asset);
-    }));
+    return Future.wait(
+      _addons.values.map((entry) async {
+        await entry.gateway.setVolume(entry.volume);
+        await entry.gateway.play(entry.addon.asset);
+      }),
+    );
   }
 
   void setTimer(int minutes) {

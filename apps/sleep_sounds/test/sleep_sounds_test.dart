@@ -120,10 +120,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Settings'), findsOneWidget);
-    expect(find.text('Remove Ads'), findsOneWidget);
+    expect(find.textContaining(r'$2.99'), findsOneWidget);
 
-    // Tap purchase button $2.99
-    await tester.tap(find.text(r'$2.99'));
+    // Tap the REMOVE ADS button
+    await tester.tap(find.text('REMOVE ADS'));
     await tester.pumpAndSettle();
 
     // Entitlement granted
@@ -297,16 +297,19 @@ void main() {
         ),
       ]);
 
-      expect(find.text(r'$3.99'), findsOneWidget);
-      expect(find.text(r'$2.99'), findsNothing);
+      expect(find.textContaining(r'$3.99'), findsOneWidget);
+      expect(find.textContaining(r'$2.99'), findsNothing);
     });
 
     testWidgets('disables the purchase when the store has no product', (tester) async {
       final billing = await openSettings(tester, const []);
 
-      expect(find.text('Unavailable'), findsOneWidget);
+      final button = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'REMOVE ADS'),
+      );
+      expect(button.onPressed, isNull);
 
-      await tester.tap(find.text('Unavailable'));
+      await tester.tap(find.text('REMOVE ADS'));
       await tester.pumpAndSettle();
 
       expect(billing.entitlements.has(FactoryEntitlements.removeAds), isFalse);

@@ -78,39 +78,39 @@ class _DurationCarouselState extends State<DurationCarousel> {
 
   @override
   Widget build(BuildContext context) => PageView.builder(
-        controller: _controller,
-        itemCount: sleepDurations.length,
-        onPageChanged: (index) => widget.onSelected(sleepDurations[index].minutes),
-        itemBuilder: (context, index) {
-          final t = (1 - (_page - index).abs()).clamp(0.0, 1.0);
-          final scale = 0.72 + (0.28 * t);
-          final color = Color.lerp(FactoryColors.mutedInk, FactoryColors.ink, t)!;
-          return Center(
-            child: GestureDetector(
-              onTap: () => _selectPage(index),
-              child: Transform.scale(
-                scale: scale,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: FactoryColors.surfaceElevated.withValues(alpha: t * .9),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: FactoryColors.moon.withValues(alpha: .55 * t),
-                    ),
-                  ),
-                  child: Text(
-                    sleepDurations[index].label,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 18,
-                      fontWeight: t > .5 ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
+    controller: _controller,
+    itemCount: sleepDurations.length,
+    onPageChanged: (index) => widget.onSelected(sleepDurations[index].minutes),
+    itemBuilder: (context, index) {
+      final t = (1 - (_page - index).abs()).clamp(0.0, 1.0);
+      final scale = 0.72 + (0.28 * t);
+      final color = Color.lerp(FactoryColors.mutedInk, FactoryColors.ink, t)!;
+      return Center(
+        child: GestureDetector(
+          onTap: () => _selectPage(index),
+          child: Transform.scale(
+            scale: scale,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                color: FactoryColors.surfaceElevated.withValues(alpha: t * .9),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: FactoryColors.moon.withValues(alpha: .55 * t),
+                ),
+              ),
+              child: Text(
+                sleepDurations[index].label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 18,
+                  fontWeight: t > .5 ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
             ),
-          );
-        },
+          ),
+        ),
       );
+    },
+  );
 }

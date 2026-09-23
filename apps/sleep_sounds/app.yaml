@@ -1,8 +1,9 @@
 app:
   id: com.douglaskrein.sleepsounds
   name: Sleep Sounds - Sleepy Capy
-  version: 1.0.0+1
+  version: 2026.9.22+1
   support_email: contact@douglaskrein.com
+  feedback_email: feedback@douglaskrein.com
   privacy_policy_url: https://douglaskrein.com/projects/sleep-sounds/privacy-policy
 
 modules:

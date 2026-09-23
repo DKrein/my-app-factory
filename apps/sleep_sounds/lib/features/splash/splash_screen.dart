@@ -52,44 +52,43 @@ class _AppSplashScreenState extends State<AppSplashScreen> {
 
   void _goToNext() {
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => widget.next),
-    );
+    Navigator.of(context)
+        .pushReplacement(MaterialPageRoute(builder: (_) => widget.next));
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: FactoryColors.night,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Sleepy Capy',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w700,
-                    color: FactoryColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Image.asset('assets/branding/icon_foreground.png', width: 200),
-                const SizedBox(height: 24),
-                Text(
-                  _tagline,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w300,
-                    color: FactoryColors.mutedInk,
-                    height: 1.4,
-                  ),
-                ),
-              ],
+    backgroundColor: FactoryColors.night,
+    body: Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Sleepy Capy',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                color: FactoryColors.ink,
+              ),
             ),
-          ),
+            const SizedBox(height: 20),
+            Image.asset('assets/branding/icon_foreground.png', width: 200),
+            const SizedBox(height: 24),
+            Text(
+              _tagline,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w300,
+                color: FactoryColors.mutedInk,
+                height: 1.4,
+              ),
+            ),
+          ],
         ),
-      );
+      ),
+    ),
+  );
 }

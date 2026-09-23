@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:factory_ads/factory_ads.dart';
 import 'package:factory_audio/factory_audio.dart';
 import 'package:factory_billing/factory_billing.dart';
@@ -8,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'app_config.g.dart';
 import 'features/library/library_page.dart';
 import 'features/player/player_controller.dart';
+import 'features/reminders/bedtime_reminder.dart';
 import 'features/splash/splash_screen.dart';
+
 import 'package:factory_ui/factory_ui.dart';
 
 const sleepSoundsCatalog = BillingCatalog(
@@ -42,6 +45,12 @@ void main() async {
   final billing = PlayBillingGateway(catalog: sleepSoundsCatalog);
 
   // Non-blocking initialization
+  unawaited(
+    bedtimeReminders
+        .init()
+        .then((_) => bedtimeReminders.restore(storage))
+        .catchError((_) {}),
+  );
   unawaited(ads.initialize());
   unawaited(billing.initialize());
 
@@ -103,7 +112,8 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
     );
     _storage = widget.storage ?? MemoryKeyValueStore();
     _ads = widget.ads ?? PreviewAdsGateway(initialized: true);
-    _billing = widget.billing ??
+    _billing =
+        widget.billing ??
         FakeBillingGateway(
           catalog: sleepSoundsCatalog,
           initialProducts: [defaultRemoveAdsProduct],
@@ -121,17 +131,17 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: AppConfig.name,
-        debugShowCheckedModeBanner: false,
-        theme: factoryDarkTheme(),
-        home: AppSplashScreen(
-          storage: _storage,
-          next: LibraryPage(
-            playback: _playback,
-            storage: _storage,
-            ads: _ads,
-            billing: _billing,
-          ),
-        ),
-      );
+    title: AppConfig.name,
+    debugShowCheckedModeBanner: false,
+    theme: factoryDarkTheme(),
+    home: AppSplashScreen(
+      storage: _storage,
+      next: LibraryPage(
+        playback: _playback,
+        storage: _storage,
+        ads: _ads,
+        billing: _billing,
+      ),
+    ),
+  );
 }
