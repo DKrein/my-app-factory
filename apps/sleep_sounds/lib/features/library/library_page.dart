@@ -340,7 +340,7 @@ class _LibraryPageState extends State<LibraryPage> {
               ),
             ),
           ),
-          Icon(sound.icon, size: 30, color: sound.color),
+          sound.icon.build(FactoryColors.mist, 34),
           const Spacer(),
           _cardLabel(sound.name),
         ],

@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
+
+import 'sound_icon.dart';
 
 class Sound {
-  const Sound(this.id, this.name, this.asset, this.icon, this.color);
+  const Sound(this.id, this.name, this.asset, this.icon);
   final String id, name, asset;
-  final IconData icon;
-  final Color color;
+  final SoundIcon icon;
 }
 
 const sounds = [
@@ -12,119 +13,102 @@ const sounds = [
     'rain',
     'Rain',
     'assets/audio/rain.ogg',
-    Icons.water_drop_outlined,
-    Color(0xFF7DA9E8),
+    SoundIcon.symbol(Symbols.rainy_rounded),
   ),
   Sound(
     'rain_tent',
     'Rain in tent',
     'assets/audio/rain_tent.ogg',
-    Icons.cabin_outlined,
-    Color(0xFF9DB8D9),
+    SoundIcon.symbol(Symbols.camping_rounded),
   ),
   Sound(
     'waves',
     'Waves',
     'assets/audio/waves.ogg',
-    Icons.waves_outlined,
-    Color(0xFF8ED9C7),
+    SoundIcon.symbol(Symbols.tsunami_rounded),
   ),
   Sound(
     'airplane',
     'Airplane',
     'assets/audio/airplane.ogg',
-    Icons.flight_outlined,
-    Color(0xFFB4BCD0),
+    SoundIcon.symbol(Symbols.flight_rounded),
   ),
   Sound(
     'river',
     'River',
     'assets/audio/river.ogg',
-    Icons.water_outlined,
-    Color(0xFF7FC8D9),
+    SoundIcon.drawn(DrawnIcon.river),
   ),
   Sound(
     'forest_rain',
     'Forest rain',
     'assets/audio/rain_forest.ogg',
-    Icons.forest_outlined,
-    Color(0xFF86C99A),
+    SoundIcon.symbol(Symbols.forest_rounded),
   ),
   Sound(
     'campfire',
     'Campfire',
     'assets/audio/campfire.ogg',
-    Icons.local_fire_department_outlined,
-    Color(0xFFF1A66A),
+    SoundIcon.symbol(Symbols.local_fire_department_rounded),
   ),
   Sound(
     'stream',
     'Stream',
     'assets/audio/stream.ogg',
-    Icons.grain,
-    Color(0xFF8ED0B8),
+    SoundIcon.drawn(DrawnIcon.stream),
   ),
   Sound(
     'storm',
     'Storm',
     'assets/audio/storm.ogg',
-    Icons.thunderstorm_outlined,
-    Color(0xFF9A8FE0),
+    SoundIcon.symbol(Symbols.thunderstorm_rounded),
   ),
   Sound(
     'winter',
     'Winter',
     'assets/audio/winter.ogg',
-    Icons.ac_unit,
-    Color(0xFFBFD8F2),
+    SoundIcon.symbol(Symbols.ac_unit_rounded),
   ),
   Sound(
     'train',
     'Train',
     'assets/audio/train.ogg',
-    Icons.train_outlined,
-    Color(0xFFF1C589),
+    SoundIcon.symbol(Symbols.train_rounded),
   ),
   Sound(
     'cat_purring',
     'Cat purring',
     'assets/audio/cat_purring.ogg',
-    Icons.pets_outlined,
-    Color(0xFFE8B4A0),
+    SoundIcon.symbol(Symbols.pets_rounded),
   ),
   Sound(
     'birds',
     'Birds',
     'assets/audio/birds.ogg',
-    Icons.flutter_dash,
-    Color(0xFF9BD6A0),
+    SoundIcon.symbol(Symbols.raven_rounded),
   ),
   Sound(
     'crickets',
     'Crickets',
     'assets/audio/crickets_chirping.ogg',
-    Icons.bug_report_outlined,
-    Color(0xFFC5D98A),
+    SoundIcon.symbol(Symbols.pest_control_rounded),
   ),
   Sound(
     'wind',
     'Wind',
     'assets/audio/wind.ogg',
-    Icons.air_outlined,
-    Color(0xFFA9C4E0),
+    SoundIcon.symbol(Symbols.air_rounded),
   ),
   Sound(
     'chimes',
     'Chimes',
     'assets/audio/chimes.ogg',
-    Icons.notifications_none,
-    Color(0xFFD9B8F0),
+    SoundIcon.symbol(Symbols.notifications_active_rounded),
   ),
   Sound(
     'clock',
     'Clock',
     'assets/audio/clock.ogg',
-    Icons.schedule,
-    Color(0xFFE0C89A),
+    SoundIcon.symbol(Symbols.schedule_rounded),
   ),
 ];

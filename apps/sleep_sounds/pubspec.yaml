@@ -24,6 +24,7 @@ dependencies:
   in_app_review: ^2.0.10
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
+  material_symbols_icons: ^4.2960.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
