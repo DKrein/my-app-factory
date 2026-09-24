@@ -21,7 +21,7 @@ class DurationCarousel extends StatefulWidget {
 }
 
 class _DurationCarouselState extends State<DurationCarousel> {
-  static const _viewportFraction = 0.32;
+  static const _viewportFraction = 0.2;
 
   late final PageController _controller = PageController(
     viewportFraction: _viewportFraction,
@@ -82,28 +82,29 @@ class _DurationCarouselState extends State<DurationCarousel> {
     itemCount: sleepDurations.length,
     onPageChanged: (index) => widget.onSelected(sleepDurations[index].minutes),
     itemBuilder: (context, index) {
-      final t = (1 - (_page - index).abs()).clamp(0.0, 1.0);
-      final scale = 0.72 + (0.28 * t);
+      final distance = (_page - index).abs();
+      final t = (1 - distance).clamp(0.0, 1.0);
+      final fontSize = (20 - 3.5 * distance).clamp(12.0, 20.0);
       final color = Color.lerp(FactoryColors.mutedInk, FactoryColors.ink, t)!;
       return Center(
         child: GestureDetector(
           onTap: () => _selectPage(index),
-          child: Transform.scale(
-            scale: scale,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                color: FactoryColors.surfaceElevated.withValues(alpha: t * .9),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: FactoryColors.moon.withValues(alpha: .55 * t),
-                ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: FactoryColors.surfaceElevated.withValues(alpha: t * .9),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: FactoryColors.moon.withValues(alpha: .55 * t),
               ),
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
               child: Text(
                 sleepDurations[index].label,
                 style: TextStyle(
                   color: color,
-                  fontSize: 18,
+                  fontSize: fontSize,
                   fontWeight: t > .5 ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),

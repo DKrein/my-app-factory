@@ -15,7 +15,8 @@ import '../../app_config.g.dart';
 import '../../content/sounds.dart';
 import '../common/starfield_background.dart';
 import '../player/player_controller.dart';
-import '../player/player_screen.dart' show openPlayerSheet;
+import '../player/duration_carousel.dart';
+import '../player/sleep_duration.dart';
 import '../reminders/bedtime_reminder.dart';
 
 class LibraryPage extends StatefulWidget {
@@ -37,7 +38,10 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
-  static const _favoritesStorageKey = 'favorites_sounds_v1';
+  static const _favoritesStorageKey = 'favorites_sounds_v2';
+  static const _activeCardColor = Color(0xFF1E3550);
+  static const _activeBorderColor = Color(0xFF8EC5F5);
+  static const _pagePadding = EdgeInsets.symmetric(horizontal: 24);
   final favorites = <String>{};
   StreamSubscription<PurchaseEvent>? _purchaseSubscription;
 
@@ -69,11 +73,7 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Future<void> _toggleFavorite(Sound sound) async {
     setState(() {
-      if (favorites.contains(sound.name)) {
-        favorites.remove(sound.name);
-      } else {
-        favorites.add(sound.name);
-      }
+      if (!favorites.remove(sound.id)) favorites.add(sound.id);
     });
     await widget.storage.writeString(_favoritesStorageKey, favorites.join(','));
   }
@@ -129,76 +129,97 @@ class _LibraryPageState extends State<LibraryPage> {
             children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Good night',
-                            style: Theme.of(context).textTheme.displaySmall,
+                    Padding(
+                      padding: _pagePadding,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Time to capy-nap',
+                              style: Theme.of(context).textTheme.displaySmall,
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          onPressed: _openSettings,
-                          icon: const Icon(Icons.tune_outlined),
-                          tooltip: 'Settings',
-                        ),
-                      ],
+                          IconButton(
+                            onPressed: _openSettings,
+                            icon: const Icon(Icons.tune_outlined),
+                            tooltip: 'Settings',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: _pagePadding,
+                      child: Text(
+                        'Capy Timer',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Pick a sound and let the day wind down.',
-                      style: TextStyle(color: FactoryColors.mutedInk),
-                    ),
-                    const SizedBox(height: 28),
                     ListenableBuilder(
                       listenable: widget.playback,
-                      builder: (context, _) {
-                        final selected = widget.playback.sound;
-                        return Card(
-                          child: ListTile(
-                            onTap: selected == null ? null : _openPlayer,
-                            leading: CircleAvatar(
-                              child: Icon(
-                                selected?.icon ?? Icons.nightlight_round,
+                      builder: (context, _) => Column(
+                        children: [
+                          SizedBox(
+                            height: 64,
+                            child: DurationCarousel(
+                              selectedMinutes: widget.playback.timerMinutes,
+                              onSelected: widget.playback.setTimer,
+                            ),
+                          ),
+                          if (widget.playback.hasSounds)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                widget.playback.playing
+                                    ? 'Stopping in ${formatSleepRemaining(widget.playback.remainingSeconds)}'
+                                    : 'Paused',
+                                style: const TextStyle(
+                                  color: FactoryColors.mist,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                            title: Text(selected?.name ?? 'Pick a sound'),
-                            subtitle: Text(
-                              selected == null
-                                  ? 'Your night starts here'
-                                  : widget.playback.playing
-                                  ? 'Now playing'
-                                  : 'Paused',
-                            ),
-                            trailing: Icon(
-                              selected == null
-                                  ? Icons.arrow_downward
-                                  : Icons.play_arrow,
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Padding(
+                      padding: _pagePadding,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'To wind down',
+                              style: Theme.of(context).textTheme.titleLarge,
                             ),
                           ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 28),
-                    Text(
-                      'To wind down',
-                      style: Theme.of(context).textTheme.titleLarge,
+                          _playPauseButton(),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: sounds.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: .88,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                          ),
-                      itemBuilder: (_, i) => _card(sounds[i]),
+                    Padding(
+                      padding: _pagePadding,
+                      child: ListenableBuilder(
+                        listenable: widget.playback,
+                        builder: (context, _) => GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: sounds.length + 1,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                childAspectRatio: .85,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                              ),
+                          itemBuilder: (_, i) =>
+                              i == 0 ? _favoritesCard() : _card(sounds[i - 1]),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -226,48 +247,116 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
-  Widget _card(Sound sound) {
-    final favorite = favorites.contains(sound.name);
-    return Card(
-      child: InkWell(
-        onTap: () {
-          widget.playback.play(sound);
-          _openPlayer();
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _toggleFavorite(sound),
-                  icon: Icon(
-                    favorite ? Icons.favorite : Icons.favorite_border,
-                    color: favorite
-                        ? FactoryColors.mist
-                        : FactoryColors.mutedInk,
+  Widget _playPauseButton() => ListenableBuilder(
+    listenable: widget.playback,
+    builder: (context, _) {
+      final playback = widget.playback;
+      return AnimatedOpacity(
+        opacity: playback.hasSounds ? 1 : .35,
+        duration: const Duration(milliseconds: 200),
+        child: Material(
+          color: FactoryColors.moon,
+          shape: const CircleBorder(),
+          child: IconButton(
+            onPressed: playback.hasSounds
+                ? playback.togglePlaying
+                : () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Select a sound to play')),
                   ),
-                ),
-              ),
-              Icon(sound.icon, size: 34, color: sound.color),
-              const Spacer(),
-              Text(sound.name, style: Theme.of(context).textTheme.titleMedium),
-              Text(
-                sound.detail,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: FactoryColors.mutedInk,
-                ),
-              ),
-            ],
+            color: FactoryColors.night,
+            icon: Icon(playback.playing ? Icons.pause : Icons.play_arrow),
+            tooltip: playback.playing ? 'Pause' : 'Play',
           ),
         ),
+      );
+    },
+  );
+
+  Widget _cardShell({
+    required bool active,
+    required VoidCallback onTap,
+    required Widget child,
+  }) => Card(
+    color: active ? _activeCardColor : null,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(
+        color: active ? _activeBorderColor : Colors.transparent,
+        width: 1.5,
+      ),
+    ),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(6, 2, 6, 10),
+        child: child,
+      ),
+    ),
+  );
+
+  Widget _cardLabel(String text) => Text(
+    text,
+    maxLines: 2,
+    textAlign: TextAlign.center,
+    overflow: TextOverflow.ellipsis,
+    style: Theme.of(context).textTheme.titleSmall,
+  );
+
+  Widget _card(Sound sound) {
+    final favorite = favorites.contains(sound.id);
+    return _cardShell(
+      active: widget.playback.isSelected(sound),
+      onTap: () => widget.playback.toggle(sound),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: IconButton(
+              visualDensity: VisualDensity.compact,
+              iconSize: 20,
+              onPressed: () => _toggleFavorite(sound),
+              icon: Icon(
+                favorite ? Icons.favorite : Icons.favorite_border,
+                color: favorite ? FactoryColors.mist : FactoryColors.mutedInk,
+              ),
+            ),
+          ),
+          Icon(sound.icon, size: 30, color: sound.color),
+          const Spacer(),
+          _cardLabel(sound.name),
+        ],
+      ),
+    );
+  }
+
+  List<Sound> get _favoriteSounds =>
+      sounds.where((s) => favorites.contains(s.id)).toList();
+
+  Widget _favoritesCard() {
+    final favoriteSounds = _favoriteSounds;
+    return _cardShell(
+      active:
+          favoriteSounds.isNotEmpty &&
+          favoriteSounds.every(widget.playback.isSelected),
+      onTap: () {
+        if (favoriteSounds.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Tap the heart on a sound to add it to Favorites.'),
+            ),
+          );
+          return;
+        }
+        widget.playback.toggleAll(favoriteSounds);
+      },
+      child: Column(
+        children: [
+          const Spacer(),
+          const Icon(Icons.favorite, size: 30, color: FactoryColors.mist),
+          const Spacer(),
+          _cardLabel('Favorites'),
+        ],
       ),
     );
   }
@@ -285,8 +374,6 @@ class _LibraryPageState extends State<LibraryPage> {
       child: SettingsSheet(billing: widget.billing, storage: widget.storage),
     ),
   );
-
-  void _openPlayer() => openPlayerSheet(context, widget.playback);
 }
 
 class SettingsSheet extends StatefulWidget {
@@ -505,16 +592,16 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8A4D8),
+                              color: const Color(0xFFB8A7E8),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Column(
                               children: [
                                 Text(
-                                  'Enjoy the app without ADS ${product?.price ?? r'$2.99'}',
+                                  'Make Sleepy Capy Ad-Free',
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
-                                    color: Color(0xFF3A2938),
+                                    color: Color(0xFF171B32),
                                     fontWeight: FontWeight.w700,
                                     fontSize: 16,
                                   ),
@@ -528,7 +615,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                     backgroundColor: Colors.white,
                                     disabledBackgroundColor: Colors.white
                                         .withValues(alpha: .5),
-                                    foregroundColor: const Color(0xFF3A2938),
+                                    foregroundColor: const Color(0xFF171B32),
                                     shape: const StadiumBorder(),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 28,
@@ -540,7 +627,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                   child: const Text(
                                     'REMOVE ADS',
                                     style: TextStyle(
-                                      color: Color(0xFF3A2938),
+                                      color: Color(0xFF171B32),
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: .5,
                                     ),
@@ -548,11 +635,10 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'One-time purchase',
+                                  'One-time purchase · ${product?.price ?? r'$2.99'}',
                                   style: TextStyle(
-                                    color: const Color(
-                                      0xFF3A2938,
-                                    ).withValues(alpha: .7),
+                                    color: const Color(0xFF171B32)
+                                        .withValues(alpha: .7),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -565,7 +651,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             Icons.restore,
                             color: FactoryColors.mutedInk,
                           ),
-                          title: const Text('Restore purchases'),
+                          title: const Text('Restore Purchase'),
                           onTap: () async {
                             Navigator.of(context).pop();
                             await billing.restorePurchases();
@@ -580,7 +666,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                           title: const Text('Bedtime Reminder'),
                           subtitle: Text(
                             _reminderEnabled
-                                ? 'Daily at ${_reminderTime.format(context)}'
+                                ? 'Daily at ${MaterialLocalizations.of(context).formatTimeOfDay(_reminderTime, alwaysUse24HourFormat: false)}'
                                 : 'Off',
                           ),
                           onTap: _reminderEnabled ? _changeReminderTime : null,
@@ -594,8 +680,16 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             Icons.star_outline,
                             color: FactoryColors.mutedInk,
                           ),
-                          title: const Text('Rate Us'),
+                          title: const Text('Rate Sleepy Capy'),
                           onTap: _rateUs,
+                        ),
+                        ListTile(
+                          leading: const Icon(
+                            Icons.mail_outline,
+                            color: FactoryColors.mutedInk,
+                          ),
+                          title: const Text('Send Feedback'),
+                          onTap: _sendFeedback,
                         ),
                         const Divider(),
                         ListTile(
@@ -605,14 +699,6 @@ class _SettingsSheetState extends State<SettingsSheet> {
                           ),
                           title: const Text('Privacy Policy'),
                           onTap: _openPrivacyPolicy,
-                        ),
-                        ListTile(
-                          leading: const Icon(
-                            Icons.mail_outline,
-                            color: FactoryColors.mutedInk,
-                          ),
-                          title: const Text('Send Feedback'),
-                          onTap: _sendFeedback,
                         ),
                         ListTile(
                           leading: const Icon(

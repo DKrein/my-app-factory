@@ -5,10 +5,14 @@ class SleepDuration {
 }
 
 const sleepDurations = <SleepDuration>[
-  SleepDuration(30, '30min'),
+  SleepDuration(15, '15m'),
+  SleepDuration(30, '30m'),
   SleepDuration(60, '1h'),
+  SleepDuration(180, '3h'),
   SleepDuration(360, '6h'),
+  SleepDuration(540, '9h'),
   SleepDuration(720, '12h'),
+  SleepDuration(1080, '18h'),
   SleepDuration(1440, '24h'),
 ];
 

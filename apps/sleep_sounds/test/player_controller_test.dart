@@ -1,145 +1,194 @@
 import 'package:factory_audio/factory_audio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sleep_sounds/content/addons.dart';
 import 'package:sleep_sounds/content/sounds.dart';
 import 'package:sleep_sounds/features/player/player_controller.dart';
+import 'package:sleep_sounds/features/player/sleep_duration.dart';
 
 void main() {
-  late PreviewAudioGateway main;
-  late List<PreviewAudioGateway> layers;
+  late List<PreviewAudioGateway> gateways;
   late PlaybackController playback;
 
-  PreviewAudioGateway createLayer() {
+  PreviewAudioGateway createGateway({required bool ownsAudioSession}) {
     final gateway = PreviewAudioGateway();
-    layers.add(gateway);
+    gateways.add(gateway);
     return gateway;
   }
 
   setUp(() {
-    main = PreviewAudioGateway();
-    layers = [];
-    playback = PlaybackController(main: main, createLayer: createLayer);
+    gateways = [];
+    playback = PlaybackController(createGateway: createGateway);
   });
 
   final rain = sounds.firstWhere((s) => s.id == 'rain');
-  final crickets = addons.firstWhere((a) => a.id == 'crickets');
-  final clock = addons.firstWhere((a) => a.id == 'clock');
+  final crickets = sounds.firstWhere((s) => s.id == 'crickets');
 
-  testWidgets('play/pause fans out to the main sound and every active addon',
-      (tester) async {
-    await playback.play(rain);
-    await playback.toggleAddon(crickets);
+  testWidgets('sounds play together and toggle independently', (tester) async {
+    await playback.toggle(rain);
+    await playback.toggle(crickets);
 
-    expect(main.playingAsset, equals(rain.asset));
-    expect(layers.single.playingAsset, equals(crickets.asset));
+    expect(gateways.map((g) => g.playingAsset), [rain.asset, crickets.asset]);
+    expect(playback.isSelected(rain), isTrue);
+    expect(playback.isSelected(crickets), isTrue);
+
+    await playback.toggle(rain);
+
+    expect(playback.isSelected(rain), isFalse);
+    expect(playback.isSelected(crickets), isTrue);
+    expect(gateways.first.disposed, isTrue);
+    expect(gateways.last.playingAsset, crickets.asset);
+
+    playback.dispose();
+  });
+
+  testWidgets('pausing keeps every sound selected', (tester) async {
+    await playback.toggle(rain);
+    await playback.toggle(crickets);
 
     await playback.togglePlaying();
-    expect(main.playingAsset, isNull);
-    expect(layers.single.playingAsset, isNull);
+
+    expect(playback.playing, isFalse);
+    expect(playback.isSelected(rain), isTrue);
+    expect(playback.isSelected(crickets), isTrue);
+    expect(gateways.every((g) => g.playingAsset == null), isTrue);
+
+    playback.dispose();
+  });
+
+  testWidgets('selecting a new sound while paused resumes all of them', (
+    tester,
+  ) async {
+    final waves = sounds.firstWhere((s) => s.id == 'waves');
+    await playback.toggle(rain);
+    await playback.toggle(crickets);
+    await playback.togglePlaying();
+
+    await playback.toggle(waves);
+
+    expect(playback.playing, isTrue);
+    expect(gateways.map((g) => g.playingAsset), [
+      rain.asset,
+      crickets.asset,
+      waves.asset,
+    ]);
+
+    playback.dispose();
+  });
+
+  testWidgets('deselecting while paused stays paused until play', (
+    tester,
+  ) async {
+    await playback.toggle(rain);
+    await playback.toggle(crickets);
+    await playback.togglePlaying();
+
+    await playback.toggle(rain);
+
+    expect(playback.playing, isFalse);
+    expect(playback.isSelected(rain), isFalse);
+    expect(gateways.first.disposed, isTrue);
+    expect(gateways.last.playingAsset, isNull);
 
     await playback.togglePlaying();
-    expect(main.playingAsset, equals(rain.asset));
-    expect(layers.single.playingAsset, equals(crickets.asset));
+
+    expect(gateways.last.playingAsset, crickets.asset);
 
     playback.dispose();
   });
 
-  testWidgets('addon volume never touches the main sound volume',
-      (tester) async {
-    await playback.play(rain);
-    await playback.toggleAddon(crickets);
+  testWidgets('play after the timer ran out starts a fresh countdown', (
+    tester,
+  ) async {
+    await playback.toggle(rain);
+    playback.setTimer(1);
+    await tester.pump(const Duration(seconds: 60));
+    expect(playback.playing, isFalse);
 
-    await playback.setAddonVolume(crickets, .2);
+    await playback.togglePlaying();
+    await tester.pump(const Duration(seconds: 10));
 
-    expect(layers.single.volume, equals(.2));
-    expect(main.volume, equals(.7));
-
-    playback.dispose();
-  });
-
-  testWidgets('deactivating an addon disposes its gateway (no leaks)',
-      (tester) async {
-    await playback.play(rain);
-    await playback.toggleAddon(crickets);
-    expect(playback.activeAddonCount, equals(1));
-
-    await playback.toggleAddon(crickets);
-
-    expect(playback.activeAddonCount, equals(0));
-    expect(playback.isAddonActive('crickets'), isFalse);
-    expect(layers.single.disposed, isTrue);
+    expect(playback.remainingSeconds, equals(50));
 
     playback.dispose();
   });
 
-  testWidgets('activating multiple addons creates one layer each',
-      (tester) async {
-    await playback.play(rain);
-    await playback.toggleAddon(crickets);
-    await playback.toggleAddon(clock);
+  testWidgets('stopping the last sound stops the timer', (tester) async {
+    await playback.toggle(rain);
+    await playback.toggle(rain);
 
-    expect(layers.length, equals(2));
-    expect(layers.every((l) => l.playingAsset != null), isTrue);
+    expect(playback.playing, isFalse);
+
+    await tester.pump(const Duration(minutes: 5));
+    expect(playback.remainingSeconds, equals(defaultSleepMinutes * 60));
 
     playback.dispose();
   });
 
-  testWidgets('an addon toggled on while paused stays silent until play',
-      (tester) async {
-    await playback.play(rain);
-    await playback.togglePlaying(); // pause
+  testWidgets('pause and resume affect every sound', (tester) async {
+    await playback.toggle(rain);
+    await playback.toggle(crickets);
 
-    await playback.toggleAddon(crickets);
-    expect(playback.isAddonActive('crickets'), isTrue);
-    expect(layers.single.playingAsset, isNull);
+    await playback.togglePlaying();
+    expect(gateways.every((g) => g.playingAsset == null), isTrue);
 
-    await playback.togglePlaying(); // resume
-    expect(layers.single.playingAsset, equals(crickets.asset));
+    await playback.togglePlaying();
+    expect(gateways.map((g) => g.playingAsset), [rain.asset, crickets.asset]);
+
+    playback.dispose();
+  });
+
+  testWidgets('adding a sound does not restart the timer', (tester) async {
+    await playback.toggle(rain);
+    playback.setTimer(1);
+    await tester.pump(const Duration(seconds: 10));
+
+    await playback.toggle(crickets);
+
+    expect(playback.remainingSeconds, equals(50));
 
     playback.dispose();
   });
 
   testWidgets('timer only ticks while playing', (tester) async {
-    await playback.play(rain);
-    playback.setTimer(1); // 60s
+    await playback.toggle(rain);
+    playback.setTimer(1);
     await tester.pump(const Duration(seconds: 10));
     expect(playback.remainingSeconds, equals(50));
 
-    await playback.togglePlaying(); // pause
+    await playback.togglePlaying();
     await tester.pump(const Duration(seconds: 60));
     expect(playback.remainingSeconds, equals(50));
 
-    await playback.togglePlaying(); // resume
+    await playback.togglePlaying();
     await tester.pump(const Duration(seconds: 10));
     expect(playback.remainingSeconds, equals(40));
 
     playback.dispose();
   });
 
-  testWidgets('timer expiry stops every layer and keeps the selected duration',
-      (tester) async {
-    await playback.play(rain);
-    await playback.toggleAddon(crickets);
-    await playback.toggleAddon(clock);
-    playback.setTimer(1); // 60s
+  testWidgets('timer expiry pauses every sound and keeps the duration', (
+    tester,
+  ) async {
+    await playback.toggle(rain);
+    await playback.toggle(crickets);
+    playback.setTimer(1);
 
     await tester.pump(const Duration(seconds: 60));
 
     expect(playback.playing, isFalse);
-    expect(main.playingAsset, isNull);
-    expect(layers.every((l) => l.playingAsset == null), isTrue);
+    expect(gateways.every((g) => g.playingAsset == null), isTrue);
     expect(playback.timerMinutes, equals(1));
 
     playback.dispose();
   });
 
-  testWidgets('switching duration mid-countdown never leaves two timers',
-      (tester) async {
-    await playback.play(rain);
-    playback.setTimer(1); // 60s
+  testWidgets('switching duration mid-countdown never leaves two timers', (
+    tester,
+  ) async {
+    await playback.toggle(rain);
+    playback.setTimer(1);
     await tester.pump(const Duration(seconds: 5));
 
-    playback.setTimer(2); // 120s
+    playback.setTimer(2);
     await tester.pump(const Duration(seconds: 10));
 
     expect(playback.remainingSeconds, equals(110));
@@ -147,13 +196,12 @@ void main() {
     playback.dispose();
   });
 
-  testWidgets('dispose disposes every addon gateway', (tester) async {
-    await playback.play(rain);
-    await playback.toggleAddon(crickets);
-    await playback.toggleAddon(clock);
+  testWidgets('dispose disposes every gateway', (tester) async {
+    await playback.toggle(rain);
+    await playback.toggle(crickets);
 
     playback.dispose();
 
-    expect(layers.every((l) => l.disposed), isTrue);
+    expect(gateways.every((g) => g.disposed), isTrue);
   });
 }

@@ -67,14 +67,14 @@ void main() async {
 class SleepSoundsApp extends StatefulWidget {
   const SleepSoundsApp({
     super.key,
-    this.audio,
+    this.createGateway,
     this.storage,
     this.ads,
     this.billing,
     this.nowPlaying,
   });
 
-  final AudioGateway? audio;
+  final AudioGatewayFactory? createGateway;
   final KeyValueStore? storage;
   final AdsGateway? ads;
   final BillingGateway? billing;
@@ -85,25 +85,19 @@ class SleepSoundsApp extends StatefulWidget {
 }
 
 class _SleepSoundsAppState extends State<SleepSoundsApp> {
-  late final AudioGateway _audio;
   late final PlaybackController _playback;
   late final KeyValueStore _storage;
   late final AdsGateway _ads;
   late final BillingGateway _billing;
-  bool _internalAudio = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.audio != null) {
-      _audio = widget.audio!;
-    } else {
-      _audio = JustAudioGateway();
-      _internalAudio = true;
-    }
     _playback = PlaybackController(
-      main: _audio,
-      createLayer: () => JustAudioGateway(ownsAudioSession: false),
+      createGateway:
+          widget.createGateway ??
+          ({required ownsAudioSession}) =>
+              JustAudioGateway(ownsAudioSession: ownsAudioSession),
       nowPlaying: widget.nowPlaying,
     );
     widget.nowPlaying?.bindTransport(
@@ -123,9 +117,6 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
   @override
   void dispose() {
     _playback.dispose();
-    if (_internalAudio && _audio is JustAudioGateway) {
-      _audio.dispose();
-    }
     super.dispose();
   }
 

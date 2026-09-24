@@ -26,7 +26,7 @@ class StarfieldBackground extends StatefulWidget {
 class _StarfieldBackgroundState extends State<StarfieldBackground> {
   static const _tile = 480.0;
   static const _stepInterval = Duration(milliseconds: 200);
-  static const _totalSteps = 1800; // full loop every 6 minutes, ~5 steps/sec
+  static const _totalSteps = 1200; // full loop every 4 minutes, ~5 steps/sec
 
   int _step = 0;
   Timer? _timer;
@@ -72,6 +72,7 @@ class _StarfieldBackgroundState extends State<StarfieldBackground> {
                 color: FactoryColors.night,
                 image: DecorationImage(
                   image: AssetImage('assets/branding/starfield.png'),
+                  opacity: .65,
                   repeat: ImageRepeat.repeat,
                 ),
               ),

@@ -2,6 +2,8 @@ import 'package:factory_storage/factory_storage.dart';
 import 'package:factory_ui/factory_ui.dart';
 import 'package:flutter/material.dart';
 
+import '../common/starfield_background.dart';
+
 const splashTaglines = [
   'Sleeping like a capybara with a full belly.',
   "Have you ever seen a capybara complain about a bad night's sleep?",
@@ -59,34 +61,36 @@ class _AppSplashScreenState extends State<AppSplashScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: FactoryColors.night,
-    body: Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Sleepy Capy',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
-                color: FactoryColors.ink,
+    body: StarfieldBackground(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Sleepy Capy',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  color: FactoryColors.ink,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Image.asset('assets/branding/icon_foreground.png', width: 200),
-            const SizedBox(height: 24),
-            Text(
-              _tagline,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w300,
-                color: FactoryColors.mutedInk,
-                height: 1.4,
+              const SizedBox(height: 20),
+              Image.asset('assets/branding/icon_foreground.png', width: 200),
+              const SizedBox(height: 24),
+              Text(
+                _tagline,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w300,
+                  color: FactoryColors.mutedInk,
+                  height: 1.4,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     ),

@@ -13,10 +13,20 @@ Future<void> pumpPastSplash(WidgetTester tester) async {
 }
 
 // The duration carousel virtualizes items far from the current page, so
-// jumping straight to a distant label (e.g. '12h' -> '30min') can tap a
+// jumping straight to a distant label (e.g. '12h' -> '30m') can tap a
 // widget that hasn't been built yet. Step through the adjacent, always-built
 // neighbor instead, exactly like a user swiping one position at a time.
-const _durationOrder = ['30min', '1h', '6h', '12h', '24h'];
+const _durationOrder = [
+  '15m',
+  '30m',
+  '1h',
+  '3h',
+  '6h',
+  '9h',
+  '12h',
+  '18h',
+  '24h',
+];
 
 Future<void> selectDuration(WidgetTester tester, String from, String to) async {
   var index = _durationOrder.indexOf(from);
@@ -29,10 +39,24 @@ Future<void> selectDuration(WidgetTester tester, String from, String to) async {
   }
 }
 
+late List<PreviewAudioGateway> gateways;
+
+PreviewAudioGateway createGateway({required bool ownsAudioSession}) {
+  final gateway = PreviewAudioGateway();
+  gateways.add(gateway);
+  return gateway;
+}
+
+Iterable<String> get playingAssets =>
+    gateways.map((g) => g.playingAsset).nonNulls;
+
 void main() {
-  testWidgets('SleepSoundsApp renders catalog, title, and initial banner', (tester) async {
+  setUp(() => gateways = []);
+
+  testWidgets('SleepSoundsApp renders catalog, title, and initial banner', (
+    tester,
+  ) async {
     final storage = MemoryKeyValueStore();
-    final audio = PreviewAudioGateway();
     final ads = PreviewAdsGateway(initialized: true);
     final billing = FakeBillingGateway(
       catalog: sleepSoundsCatalog,
@@ -42,14 +66,14 @@ void main() {
     await tester.pumpWidget(
       SleepSoundsApp(
         storage: storage,
-        audio: audio,
+        createGateway: createGateway,
         ads: ads,
         billing: billing,
       ),
     );
     await pumpPastSplash(tester);
 
-    expect(find.text('Good night'), findsOneWidget);
+    expect(find.text('Time to capy-nap'), findsOneWidget);
     expect(find.text('Rain'), findsOneWidget);
     expect(find.text('Waves'), findsOneWidget);
 
@@ -57,34 +81,47 @@ void main() {
     expect(find.text('Preview Ad [banner_home]'), findsOneWidget);
   });
 
-  testWidgets('Favorites persist in KeyValueStore', (tester) async {
+  testWidgets('Favorites persist and the Favorites card plays them all', (
+    tester,
+  ) async {
     final storage = MemoryKeyValueStore();
-    final audio = PreviewAudioGateway();
-    final ads = PreviewAdsGateway(initialized: true);
-    final billing = FakeBillingGateway(catalog: sleepSoundsCatalog);
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
       SleepSoundsApp(
         storage: storage,
-        audio: audio,
-        ads: ads,
-        billing: billing,
+        createGateway: createGateway,
+        ads: PreviewAdsGateway(initialized: true),
+        billing: FakeBillingGateway(catalog: sleepSoundsCatalog),
       ),
     );
     await pumpPastSplash(tester);
 
-    // Tap first favorite icon (favorite_border)
-    final favoriteButtons = find.byIcon(Icons.favorite_border);
-    expect(favoriteButtons, findsWidgets);
-    await tester.tap(favoriteButtons.first);
-    await tester.pumpAndSettle();
+    final hearts = find.byIcon(Icons.favorite_border);
+    await tester.tap(hearts.at(0));
+    await tester.pump();
+    await tester.tap(hearts.at(0));
+    await tester.pump();
 
-    // Check that favorite was saved in storage
-    final stored = await storage.readString('favorites_sounds_v1');
-    expect(stored, contains('Rain'));
+    expect(
+      await storage.readString('favorites_sounds_v2'),
+      allOf(contains('rain'), contains('rain_tent')),
+    );
 
-    // Icon should now be filled favorite
-    expect(find.byIcon(Icons.favorite), findsOneWidget);
+    await tester.tap(find.text('Favorites'));
+    await tester.pump();
+
+    expect(
+      playingAssets,
+      unorderedEquals(['assets/audio/rain.ogg', 'assets/audio/rain_tent.ogg']),
+    );
+
+    await tester.tap(find.text('Favorites'));
+    await tester.pump();
+    expect(playingAssets, isEmpty);
   });
 
   testWidgets('In-App Purchase removes ads immediately', (tester) async {
@@ -94,7 +131,6 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final storage = MemoryKeyValueStore();
-    final audio = PreviewAudioGateway();
     final ads = PreviewAdsGateway(initialized: true);
     final billing = FakeBillingGateway(
       catalog: sleepSoundsCatalog,
@@ -104,7 +140,7 @@ void main() {
     await tester.pumpWidget(
       SleepSoundsApp(
         storage: storage,
-        audio: audio,
+        createGateway: createGateway,
         ads: ads,
         billing: billing,
       ),
@@ -137,122 +173,125 @@ void main() {
     expect(find.text('Preview Ad [banner_home]'), findsNothing);
   });
 
-  testWidgets('Player opens with real timer controls', (tester) async {
+  Future<void> pumpApp(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final storage = MemoryKeyValueStore();
-    final audio = PreviewAudioGateway();
-    final ads = PreviewAdsGateway(initialized: true);
-    final billing = FakeBillingGateway(catalog: sleepSoundsCatalog);
-
     await tester.pumpWidget(
       SleepSoundsApp(
-        storage: storage,
-        audio: audio,
-        ads: ads,
-        billing: billing,
+        storage: MemoryKeyValueStore(),
+        createGateway: createGateway,
+        ads: PreviewAdsGateway(initialized: true),
+        billing: FakeBillingGateway(catalog: sleepSoundsCatalog),
       ),
     );
     await pumpPastSplash(tester);
+  }
 
-    // Tap on sound card to open the full-screen player
+  testWidgets('tapping sounds plays them together and each tap toggles one', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+
     await tester.tap(find.text('Rain'));
-    await tester.pumpAndSettle();
-
-    // Player is open, audio is playing, and the 12h default timer is running
-    expect(find.byTooltip('Close player'), findsOneWidget);
-    expect(find.byTooltip('Pause'), findsOneWidget);
-    expect(find.text('12h'), findsOneWidget);
-    expect(find.textContaining('Stopping in 12h 00m'), findsOneWidget);
-
-    // Select 1h on the duration carousel
-    await selectDuration(tester, '12h', '1h');
-
-    expect(find.textContaining('Stopping in 1h 00m'), findsOneWidget);
-
-    // Stop the timer before closing so no ticker outlives the test
-    await tester.tap(find.byTooltip('Pause'));
+    await tester.pump();
+    await tester.tap(find.text('Waves'));
     await tester.pump();
 
-    // Close player sheet
-    await tester.tap(find.byTooltip('Close player'));
-    await tester.pumpAndSettle();
+    expect(
+      playingAssets,
+      unorderedEquals(['assets/audio/rain.ogg', 'assets/audio/waves.ogg']),
+    );
+
+    await tester.tap(find.text('Rain'));
+    await tester.pump();
+
+    expect(playingAssets, ['assets/audio/waves.ogg']);
+
+    await tester.tap(find.text('Waves'));
+    await tester.pump();
+    expect(playingAssets, isEmpty);
+  });
+
+  testWidgets('play/pause button follows the sounds', (tester) async {
+    await pumpApp(tester);
+
+    await tester.tap(find.byTooltip('Play'));
+    await tester.pump();
+    expect(find.text('Select a sound to play'), findsOneWidget);
+
+    await tester.tap(find.text('Rain'));
+    await tester.pump();
+    expect(find.byTooltip('Pause'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Pause'));
+    await tester.pump();
+    expect(playingAssets, isEmpty);
+    expect(find.byTooltip('Play'), findsOneWidget);
+    expect(find.text('Paused'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Play'));
+    await tester.pump();
+    expect(playingAssets, ['assets/audio/rain.ogg']);
+
+    await tester.tap(find.text('Rain'));
+    await tester.pump();
+    expect(find.byTooltip('Play'), findsOneWidget);
+    expect(playingAssets, isEmpty);
   });
 
   group('sleep timer', () {
-    late PreviewAudioGateway audio;
+    testWidgets('is on the home page and starts with the first sound', (
+      tester,
+    ) async {
+      await pumpApp(tester);
 
-    setUp(() => audio = PreviewAudioGateway());
+      expect(find.text('12h'), findsOneWidget);
+      expect(find.textContaining('Stopping in'), findsNothing);
 
-    Future<void> startRainWithTimer(WidgetTester tester, String label) async {
-      tester.view.physicalSize = const Size(1080, 2200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        SleepSoundsApp(
-          storage: MemoryKeyValueStore(),
-          audio: audio,
-          ads: PreviewAdsGateway(initialized: true),
-          billing: FakeBillingGateway(catalog: sleepSoundsCatalog),
-        ),
-      );
-      await pumpPastSplash(tester);
       await tester.tap(find.text('Rain'));
-      await tester.pumpAndSettle();
-      await selectDuration(tester, '12h', label);
-    }
-
-    Future<void> dismissPlayerSheet(WidgetTester tester) async {
-      await tester.tap(find.byTooltip('Close player'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byTooltip('Close player'), findsNothing);
-    }
 
-    testWidgets('pauses the audio when it expires with the player closed', (tester) async {
-      await startRainWithTimer(tester, '30min');
-      await dismissPlayerSheet(tester);
+      expect(find.textContaining('Stopping in 12h 00m'), findsOneWidget);
 
-      expect(audio.playingAsset, 'assets/audio/rain.ogg');
+      await selectDuration(tester, '12h', '1h');
+      expect(find.textContaining('Stopping in 1h 00m'), findsOneWidget);
+
+      await tester.tap(find.text('Rain'));
+      await tester.pump();
+    });
+
+    testWidgets('pauses every sound when it expires', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Rain'));
+      await tester.tap(find.text('Waves'));
+      await tester.pump();
+      await selectDuration(tester, '12h', '30m');
+
+      expect(playingAssets, hasLength(2));
 
       await tester.pump(const Duration(minutes: 30));
 
-      expect(audio.playingAsset, isNull);
+      expect(playingAssets, isEmpty);
     });
 
-    testWidgets('shows the remaining time when the player is reopened', (tester) async {
-      await startRainWithTimer(tester, '30min');
-      await dismissPlayerSheet(tester);
-      await tester.pump(const Duration(seconds: 58));
-
-      await tester.tap(find.text('Now playing'));
-      await tester.pump(const Duration(milliseconds: 500));
-
-      // A few hundred ms of sheet-transition animation may tick an extra
-      // second or two; assert the ballpark rather than an exact value.
-      expect(find.textContaining('Stopping in 29:0'), findsOneWidget);
-
-      // Stop the timer before the test ends so no ticker outlives it
-      await tester.tap(find.byTooltip('Pause'));
+    testWidgets('counts down once per second after switching duration', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Rain'));
       await tester.pump();
-    });
-
-    testWidgets('counts down once per second after switching duration', (tester) async {
-      await startRainWithTimer(tester, '1h');
+      await selectDuration(tester, '12h', '1h');
       await tester.pump(const Duration(seconds: 5));
 
-      await selectDuration(tester, '1h', '30min');
+      await selectDuration(tester, '1h', '30m');
       await tester.pump(const Duration(seconds: 10));
 
       expect(find.textContaining('Stopping in 29:50'), findsOneWidget);
 
-      // Stop the timer before the test ends so no ticker outlives it
-      await tester.tap(find.byTooltip('Pause'));
+      await tester.tap(find.text('Rain'));
       await tester.pump();
     });
   });
@@ -274,7 +313,7 @@ void main() {
       await tester.pumpWidget(
         SleepSoundsApp(
           storage: MemoryKeyValueStore(),
-          audio: PreviewAudioGateway(),
+          createGateway: createGateway,
           ads: PreviewAdsGateway(initialized: true),
           billing: billing,
         ),
@@ -299,7 +338,9 @@ void main() {
       expect(find.textContaining(r'$2.99'), findsNothing);
     });
 
-    testWidgets('disables the purchase when the store has no product', (tester) async {
+    testWidgets('disables the purchase when the store has no product', (
+      tester,
+    ) async {
       final billing = await openSettings(tester, const []);
 
       final button = tester.widget<ElevatedButton>(
