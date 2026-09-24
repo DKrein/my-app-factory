@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW"/>
@@ -23,6 +24,21 @@
             android:value="ca-app-pub-3940256099942544~3347511713"/>
         <!-- The AdMob SDK starts itself at launch through this provider. It is
              removed so the app starts the SDK on its own, and never for Pro. -->
+        <!-- The bedtime reminder: without these receivers the scheduled
+             notification never shows, and it is lost when the phone restarts. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false"/>
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
         <provider
             android:name="com.google.android.gms.ads.MobileAdsInitProvider"
             android:authorities="${applicationId}.mobileadsinitprovider"

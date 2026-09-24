@@ -30,11 +30,27 @@ Construir somente o necessário para um primeiro app offline:
 ## Fase 2 — Monetização opt-in
 
 - [x] `factory_ads` com AdMob, consentimento/política aplicável, unidades de teste e placements explícitos;
-- [x] `factory_billing` com compra não consumível, restauração e entitlement `remove_ads`;
+- [x] `factory_billing` com compra não consumível, restauração e entitlements definidos pelo app (o Sleepy Capy usa `pro`; o pacote não conhece o nome);
 - [x] cenários de erro/pending purchase e testes manuais em faixa interna do Google Play;
 - [x] documentação de configuração do Play Console por app.
 
 **Não incluir ainda:** assinaturas, paywalls universais ou configuração remota. Validar antes uma compra única real em um app.
+
+**Estado do piloto (Sleepy Capy):** a compra única virou o produto Pro, a US$ 4,99 (ADR 0002 do app), com paywall próprio do app, sem paywall universal. A cobrança restaura as compras em silêncio ao abrir, a SDK de anúncios só inicia para quem não é Pro e o `factory_ads` só constrói banner depois de a SDK estar pronta. Ainda falta validar tudo isso com compra real na faixa interna do Play.
+
+### Sleepy Capy: do código à publicação
+
+O app está completo em código. O que falta é de conta e de loja; o estado de cada item está em `apps/sleep_sounds/docs/store-checklist.md`.
+
+- [x] Correções, reprodução com fade, catálogo revisado (`docs/audio-qa.md`), acabamento visual e créditos de áudio;
+- [x] Sleepy Capy Pro: volume por som, mixes salvos, timer Pro, temas, paywall e anúncios só na grade e em Configurações;
+- [x] Ícone, splash nativa e inglês/português;
+- [x] Inventário de dados e checklist da loja (`data-inventory.md`, `store-checklist.md`) e roteiro de teste em aparelho (`manual-test-plan.md`);
+- [ ] Decidir o `applicationId` (permanente depois do envio), criar a chave de envio e os IDs reais do AdMob;
+- [ ] Política de privacidade no ar, com as seções de anúncios e compras;
+- [ ] Capturas de tela e arte final do ícone (hoje provisórios);
+- [ ] Rodar o roteiro de teste em aparelho e a compra na faixa interna;
+- [ ] Teste fechado com 12 testadores por 14 dias (conta pessoal nova) e envio para produção.
 
 ## Fase 3 — Assinaturas e métricas, se justificadas
 
