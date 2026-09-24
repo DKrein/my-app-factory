@@ -15,9 +15,16 @@ import 'package:flutter/material.dart';
 /// drift, while still leaving real gaps with nothing scheduled between
 /// ticks so tests can settle.
 class StarfieldBackground extends StatefulWidget {
-  const StarfieldBackground({super.key, required this.child});
+  const StarfieldBackground({
+    super.key,
+    required this.child,
+    this.starOpacity = .65,
+  });
 
   final Widget child;
+
+  /// Opacity of the star tile; utility screens use a fainter sky.
+  final double starOpacity;
 
   @override
   State<StarfieldBackground> createState() => _StarfieldBackgroundState();
@@ -68,11 +75,11 @@ class _StarfieldBackgroundState extends State<StarfieldBackground> {
               transform: Matrix4.translationValues(dx, dy, 0),
               width: size.width + _tile * 2,
               height: size.height + _tile * 2,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: FactoryColors.night,
                 image: DecorationImage(
-                  image: AssetImage('assets/branding/starfield.png'),
-                  opacity: .65,
+                  image: const AssetImage('assets/branding/starfield.png'),
+                  opacity: widget.starOpacity,
                   repeat: ImageRepeat.repeat,
                 ),
               ),

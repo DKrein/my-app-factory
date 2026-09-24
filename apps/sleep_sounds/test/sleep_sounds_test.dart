@@ -568,8 +568,8 @@ void main() {
     ) async {
       final billing = await openSettings(tester, const []);
 
-      final button = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'REMOVE ADS'),
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'REMOVE ADS'),
       );
       expect(button.onPressed, isNull);
 

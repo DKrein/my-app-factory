@@ -41,8 +41,6 @@ class LibraryPage extends StatefulWidget {
 
 class _LibraryPageState extends State<LibraryPage> {
   static const _favoritesStorageKey = 'favorites_sounds_v2';
-  static const _activeCardColor = Color(0xFF1E3550);
-  static const _activeBorderColor = Color(0xFF8EC5F5);
   static const _pagePadding = EdgeInsets.symmetric(horizontal: 24);
   static const _bannerHeight = 50.0;
   final favorites = <String>{};
@@ -303,11 +301,11 @@ class _LibraryPageState extends State<LibraryPage> {
     required VoidCallback onTap,
     required Widget child,
   }) => Card(
-    color: active ? _activeCardColor : null,
+    color: active ? FactoryColors.activeSurface : null,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
       side: BorderSide(
-        color: active ? _activeBorderColor : Colors.transparent,
+        color: active ? FactoryColors.activeOutline : Colors.transparent,
         width: 1.5,
       ),
     ),
@@ -427,11 +425,13 @@ class _LibraryPageState extends State<LibraryPage> {
     final active = !empty && favoriteSounds.every(widget.playback.isSelected);
     final playing = active && widget.playback.playing;
     return Material(
-      color: active ? _activeCardColor : FactoryColors.surfaceElevated,
+      color: active
+          ? FactoryColors.activeSurface
+          : FactoryColors.surfaceElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: active ? _activeBorderColor : FactoryColors.outline,
+          color: active ? FactoryColors.activeOutline : FactoryColors.outline,
           width: 1.5,
         ),
       ),
@@ -523,6 +523,10 @@ class SettingsSheet extends StatefulWidget {
 }
 
 class _SettingsSheetState extends State<SettingsSheet> {
+  static const _settingsStarOpacity = .2;
+  // A tighter line height keeps the glyphs of a two-line tile centered on
+  // the same line as its icon and switch.
+  static const _twoLineTileText = TextStyle(height: 1.2);
   StoreProduct? _product;
   bool _reminderEnabled = false;
   TimeOfDay _reminderTime = BedtimeReminderService.defaultTime;
@@ -679,6 +683,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
         final product = _product;
 
         return StarfieldBackground(
+          starOpacity: _settingsStarOpacity,
           child: SafeArea(
             child: Column(
               children: [
@@ -730,8 +735,9 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFB8A7E8),
+                              color: FactoryColors.surfaceElevated,
                               borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: FactoryColors.outline),
                             ),
                             child: Column(
                               children: [
@@ -739,33 +745,29 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                   'Make Sleepy Capy Ad-Free',
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
-                                    color: Color(0xFF171B32),
+                                    color: FactoryColors.ink,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 16,
                                   ),
                                 ),
                                 const SizedBox(height: 14),
-                                ElevatedButton(
+                                FilledButton(
                                   onPressed: product == null
                                       ? null
                                       : () => billing.buyNonConsumable(product),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    disabledBackgroundColor: Colors.white
-                                        .withValues(alpha: .5),
-                                    foregroundColor: const Color(0xFF171B32),
-                                    shape: const StadiumBorder(),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: FactoryColors.mist,
+                                    foregroundColor: FactoryColors.night,
+                                    disabledBackgroundColor: FactoryColors.mist
+                                        .withValues(alpha: .25),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 28,
                                       vertical: 12,
                                     ),
-                                    elevation: 6,
-                                    shadowColor: Colors.black45,
                                   ),
                                   child: const Text(
                                     'REMOVE ADS',
                                     style: TextStyle(
-                                      color: Color(0xFF171B32),
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: .5,
                                     ),
@@ -774,9 +776,8 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                 const SizedBox(height: 6),
                                 Text(
                                   'One-time purchase · ${product?.price ?? r'$2.99'}',
-                                  style: TextStyle(
-                                    color: const Color(0xFF171B32)
-                                        .withValues(alpha: .7),
+                                  style: const TextStyle(
+                                    color: FactoryColors.mutedInk,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -801,11 +802,15 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             Icons.bedtime_outlined,
                             color: FactoryColors.mutedInk,
                           ),
-                          title: const Text('Bedtime Reminder'),
+                          title: const Text(
+                            'Bedtime Reminder',
+                            style: _twoLineTileText,
+                          ),
                           subtitle: Text(
                             _reminderEnabled
                                 ? 'Daily at ${MaterialLocalizations.of(context).formatTimeOfDay(_reminderTime, alwaysUse24HourFormat: false)}'
                                 : 'Off',
+                            style: _twoLineTileText,
                           ),
                           onTap: _reminderEnabled ? _changeReminderTime : null,
                           trailing: Switch(
@@ -851,8 +856,14 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             Icons.info_outline,
                             color: FactoryColors.mutedInk,
                           ),
-                          title: const Text('App Version'),
-                          subtitle: Text(_formattedVersion),
+                          title: const Text(
+                            'App Version',
+                            style: _twoLineTileText,
+                          ),
+                          subtitle: Text(
+                            _formattedVersion,
+                            style: _twoLineTileText,
+                          ),
                         ),
                       ],
                     ),

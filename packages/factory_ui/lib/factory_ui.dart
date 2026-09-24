@@ -11,6 +11,9 @@ abstract final class FactoryColors {
   static const ink = Color(0xFFF4F7FF);
   static const mutedInk = Color(0xFFB8C1D9);
   static const outline = Color(0xFF3B4768);
+  static const divider = Color(0x14FFFFFF);
+  static const activeSurface = Color(0xFF1E3550);
+  static const activeOutline = Color(0xFF8EC5F5);
 }
 
 abstract final class FactorySpacing {
@@ -41,6 +44,13 @@ ThemeData factoryDarkTheme() {
       titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
       bodyMedium: TextStyle(fontSize: 15),
       labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+    ),
+    dividerTheme: const DividerThemeData(
+      color: FactoryColors.divider,
+      thickness: 1,
+      space: 1,
+      indent: FactorySpacing.lg,
+      endIndent: FactorySpacing.lg,
     ),
     cardTheme: const CardThemeData(
       color: FactoryColors.surface,
