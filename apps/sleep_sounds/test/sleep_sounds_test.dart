@@ -32,6 +32,9 @@ Future<void> selectDuration(WidgetTester tester, String from, String to) async {
 
 late List<PreviewAudioGateway> gateways;
 
+Finder soundCard(String name) =>
+    find.descendant(of: find.byType(GridView), matching: find.text(name));
+
 PreviewAudioGateway createGateway({required bool ownsAudioSession}) {
   final gateway = PreviewAudioGateway();
   gateways.add(gateway);
@@ -125,15 +128,15 @@ void main() {
     );
     await pumpPastSplash(tester);
 
-    expect(find.byIcon(Symbols.favorite_rounded), findsOneWidget);
+    expect(find.byIcon(Symbols.favorite_rounded), findsNWidgets(2));
     expect(find.byTooltip('Add to favorites'), findsNothing);
     expect(find.byTooltip('Remove from favorites'), findsNothing);
 
-    await tester.tap(find.text('Waves'));
+    await tester.tap(soundCard('Waves'));
     await tester.pump();
 
     expect(find.byTooltip('Add to favorites'), findsOneWidget);
-    expect(find.byIcon(Symbols.favorite_rounded), findsNWidgets(2));
+    expect(find.byIcon(Symbols.favorite_rounded), findsNWidgets(3));
 
     await tester.tap(find.byTooltip('Add to favorites'));
     await tester.pump();
@@ -141,7 +144,7 @@ void main() {
     expect(find.byTooltip('Remove from favorites'), findsOneWidget);
     expect(playingAssets, ['assets/audio/waves.ogg']);
 
-    await tester.tap(find.text('Waves'));
+    await tester.tap(soundCard('Waves'));
     await tester.pump();
   });
 
@@ -166,16 +169,16 @@ void main() {
 
     expect(find.byTooltip('Add to favorites'), findsNothing);
 
-    await tester.tap(find.text('Rain'));
+    await tester.tap(soundCard('Rain'));
     await tester.pump();
     await tester.tap(find.byTooltip('Add to favorites'));
     await tester.pump();
-    await tester.tap(find.text('Rain'));
-    await tester.tap(find.text('Rain in tent'));
+    await tester.tap(soundCard('Rain'));
+    await tester.tap(soundCard('Rain in tent'));
     await tester.pump();
     await tester.tap(find.byTooltip('Add to favorites'));
     await tester.pump();
-    await tester.tap(find.text('Rain in tent'));
+    await tester.tap(soundCard('Rain in tent'));
     await tester.pump();
     expect(playingAssets, isEmpty);
 
@@ -195,6 +198,90 @@ void main() {
     await tester.tap(find.text('Favorites'));
     await tester.pump();
     expect(playingAssets, isEmpty);
+  });
+
+  group('Favorites row', () {
+    Future<void> pumpWithFavorites(
+      WidgetTester tester,
+      String favorites,
+    ) async {
+      final storage = MemoryKeyValueStore();
+      if (favorites.isNotEmpty) {
+        await storage.writeString('favorites_sounds_v2', favorites);
+      }
+      tester.view.physicalSize = const Size(1080, 2200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        SleepSoundsApp(
+          storage: storage,
+          createGateway: createGateway,
+          ads: PreviewAdsGateway(initialized: true),
+          billing: FakeBillingGateway(catalog: sleepSoundsCatalog),
+        ),
+      );
+      await pumpPastSplash(tester);
+    }
+
+    testWidgets('sits above the grid and lists the favorites', (tester) async {
+      await pumpWithFavorites(tester, 'rain,river');
+
+      expect(find.text('Rain · River'), findsOneWidget);
+      expect(find.byType(GridView), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(GridView),
+          matching: find.text('Favorites'),
+        ),
+        findsNothing,
+      );
+      expect(find.byTooltip('Play favorites'), findsOneWidget);
+    });
+
+    testWidgets('plays the favorites, then pauses and resumes', (tester) async {
+      await pumpWithFavorites(tester, 'rain,river');
+
+      await tester.tap(find.text('Favorites'));
+      await tester.pump();
+
+      expect(
+        playingAssets,
+        unorderedEquals(['assets/audio/rain.ogg', 'assets/audio/river.ogg']),
+      );
+      expect(find.byTooltip('Pause favorites'), findsOneWidget);
+
+      await tester.tap(find.text('Favorites'));
+      await tester.pump();
+
+      expect(playingAssets, isEmpty);
+      expect(find.byTooltip('Play favorites'), findsOneWidget);
+
+      await tester.tap(find.text('Favorites'));
+      await tester.pump();
+
+      expect(playingAssets, hasLength(2));
+
+      await tester.tap(soundCard('Rain'));
+      await tester.tap(soundCard('River'));
+      await tester.pump();
+    });
+
+    testWidgets('without favorites it explains how to add one', (tester) async {
+      await pumpWithFavorites(tester, '');
+
+      expect(find.text('Start a sound and tap its heart'), findsOneWidget);
+      expect(find.byTooltip('Play favorites'), findsNothing);
+
+      await tester.tap(find.text('Favorites'));
+      await tester.pump();
+
+      expect(
+        find.text('Start a sound and tap its heart to add it to Favorites.'),
+        findsOneWidget,
+      );
+      expect(playingAssets, isEmpty);
+    });
   });
 
   testWidgets('In-App Purchase removes ads immediately', (tester) async {

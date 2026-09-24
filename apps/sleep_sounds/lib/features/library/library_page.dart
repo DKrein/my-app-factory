@@ -221,10 +221,18 @@ class _LibraryPageState extends State<LibraryPage> {
                         padding: _pagePadding,
                         child: ListenableBuilder(
                           listenable: widget.playback,
+                          builder: (context, _) => _favoritesRow(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: _pagePadding,
+                        child: ListenableBuilder(
+                          listenable: widget.playback,
                           builder: (context, _) => GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: sounds.length + 1,
+                            itemCount: sounds.length,
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 3,
@@ -232,9 +240,7 @@ class _LibraryPageState extends State<LibraryPage> {
                                   crossAxisSpacing: 10,
                                   mainAxisSpacing: 10,
                                 ),
-                            itemBuilder: (_, i) => i == 0
-                                ? _favoritesCard()
-                                : _card(sounds[i - 1]),
+                            itemBuilder: (_, i) => _card(sounds[i]),
                           ),
                         ),
                       ),
@@ -386,32 +392,92 @@ class _LibraryPageState extends State<LibraryPage> {
   List<Sound> get _favoriteSounds =>
       sounds.where((s) => favorites.contains(s.id)).toList();
 
-  Widget _favoritesCard() {
+  /// Plays every favorite, or pauses/resumes playback once all of them are
+  /// selected.
+  void _onFavoritesPressed(List<Sound> favoriteSounds) {
+    if (favoriteSounds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Start a sound and tap its heart to add it to Favorites.',
+          ),
+        ),
+      );
+    } else if (favoriteSounds.every(widget.playback.isSelected)) {
+      widget.playback.togglePlaying();
+    } else {
+      widget.playback.toggleAll(favoriteSounds);
+    }
+  }
+
+  Widget _favoritesRow() {
     final favoriteSounds = _favoriteSounds;
-    return _cardShell(
-      active:
-          favoriteSounds.isNotEmpty &&
-          favoriteSounds.every(widget.playback.isSelected),
-      onTap: () {
-        if (favoriteSounds.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Start a sound and tap its heart to add it to Favorites.',
+    final empty = favoriteSounds.isEmpty;
+    final active = !empty && favoriteSounds.every(widget.playback.isSelected);
+    final playing = active && widget.playback.playing;
+    return Material(
+      color: active ? _activeCardColor : FactoryColors.surfaceElevated,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: active ? _activeBorderColor : FactoryColors.outline,
+          width: 1.5,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => _onFavoritesPressed(favoriteSounds),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              _heart(
+                filled: !empty,
+                color: empty
+                    ? FactoryColors.mutedInk.withValues(alpha: .6)
+                    : FactoryColors.mist,
+                size: 30,
               ),
-            ),
-          );
-          return;
-        }
-        widget.playback.toggleAll(favoriteSounds);
-      },
-      child: Column(
-        children: [
-          const Spacer(),
-          const Icon(Icons.favorite, size: 30, color: FactoryColors.mist),
-          const Spacer(),
-          _cardLabel('Favorites'),
-        ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Favorites',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: empty
+                            ? FactoryColors.mutedInk
+                            : FactoryColors.ink,
+                      ),
+                    ),
+                    Text(
+                      empty
+                          ? 'Start a sound and tap its heart'
+                          : favoriteSounds.map((s) => s.name).join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: FactoryColors.mutedInk),
+                    ),
+                  ],
+                ),
+              ),
+              if (!empty)
+                Tooltip(
+                  message: playing ? 'Pause favorites' : 'Play favorites',
+                  child: Icon(
+                    playing
+                        ? Symbols.pause_rounded
+                        : Symbols.play_arrow_rounded,
+                    fill: 1,
+                    size: 28,
+                    color: playing ? FactoryColors.ink : FactoryColors.mutedInk,
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
