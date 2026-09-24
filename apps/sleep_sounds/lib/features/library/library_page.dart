@@ -8,11 +8,13 @@ import 'package:factory_core/factory_core.dart';
 import 'package:factory_storage/factory_storage.dart';
 import 'package:factory_ui/factory_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:in_app_review/in_app_review.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_config.g.dart';
+import '../../content/credits.dart';
 import '../../content/sounds.dart';
 import '../common/starfield_background.dart';
 import 'equalizer_bars.dart';
@@ -524,6 +526,19 @@ class SettingsSheet extends StatefulWidget {
 
 class _SettingsSheetState extends State<SettingsSheet> {
   static const _settingsStarOpacity = .2;
+  static final _aboutLabels = AboutLabels(
+    title: 'About',
+    version: 'Version',
+    privacyPolicy: 'Privacy Policy',
+    contact: 'Contact',
+    openSourceLicenses: 'Open source licenses',
+    audioCredits: 'Audio credits',
+    creditLine: (title, author) => '"$title" by $author',
+    changesLine: (changes) => 'Changes: $changes',
+  );
+  late final Future<List<CreditEntry>> _credits = rootBundle
+      .loadString('assets/credits.json')
+      .then(parseCredits);
   // A tighter line height keeps the glyphs of a two-line tile centered on
   // the same line as its icon and switch.
   static const _twoLineTileText = TextStyle(height: 1.2);
@@ -649,8 +664,24 @@ class _SettingsSheetState extends State<SettingsSheet> {
     });
   }
 
-  Future<void> _openPrivacyPolicy() =>
-      launchUrl(Uri.parse(AppConfig.privacyPolicyUrl));
+  Future<void> _openAbout() async {
+    final credits = await _credits;
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AboutScreen(
+          appName: 'Sleepy Capy',
+          version: _formattedVersion,
+          privacyPolicyUrl: AppConfig.privacyPolicyUrl,
+          supportEmail: AppConfig.supportEmail,
+          credits: credits,
+          labels: _aboutLabels,
+          openLink: (uri) =>
+              launchUrl(uri, mode: LaunchMode.externalApplication),
+        ),
+      ),
+    );
+  }
 
   Future<void> _sendFeedback() {
     final body = StringBuffer()
@@ -837,14 +868,6 @@ class _SettingsSheetState extends State<SettingsSheet> {
                         const Divider(),
                         ListTile(
                           leading: const Icon(
-                            Icons.privacy_tip_outlined,
-                            color: FactoryColors.mutedInk,
-                          ),
-                          title: const Text('Privacy Policy'),
-                          onTap: _openPrivacyPolicy,
-                        ),
-                        ListTile(
-                          leading: const Icon(
                             Icons.battery_alert_outlined,
                             color: FactoryColors.mutedInk,
                           ),
@@ -856,14 +879,8 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             Icons.info_outline,
                             color: FactoryColors.mutedInk,
                           ),
-                          title: const Text(
-                            'App Version',
-                            style: _twoLineTileText,
-                          ),
-                          subtitle: Text(
-                            _formattedVersion,
-                            style: _twoLineTileText,
-                          ),
+                          title: const Text('About'),
+                          onTap: _openAbout,
                         ),
                       ],
                     ),

@@ -2,6 +2,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+export 'src/about_screen.dart';
+
 abstract final class FactoryColors {
   static const night = Color(0xFF0B1020);
   static const surface = Color(0xFF151C33);

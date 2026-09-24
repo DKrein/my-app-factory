@@ -35,6 +35,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/audio/
+    - assets/credits.json
     - assets/branding/icon_foreground.png
     - assets/branding/starfield.png
 
