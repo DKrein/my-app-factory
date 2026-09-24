@@ -480,20 +480,26 @@ class _SettingsSheetState extends State<SettingsSheet> {
   // the store listing is what actually works today and after launch alike.
   Future<void> _rateUs() => InAppReview.instance.openStoreListing();
 
+  Future<void> _openBatterySettings() async {
+    try {
+      await AppSettings.openAppSettings();
+    } catch (_) {
+      await AppSettings.openAppSettings(
+        type: AppSettingsType.batteryOptimization,
+      );
+    }
+  }
+
   Future<void> _showBatteryOptimizationDialog() => showDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       backgroundColor: FactoryColors.surfaceElevated,
-      title: const Text('Battery Optimization'),
+      title: const Text('Battery optimization'),
       content: const Text(
-        'Some Android devices stop background apps to save battery. '
-        'We recommend turning OFF battery optimization for our app in '
-        'system settings. This will prevent our app from closing or '
-        'shutting off during sleep time.\n\n'
-        'To do it, follow the steps:\n'
-        '1. Tap "Turn Off" below\n'
-        '2. Once in the Capy-App settings, tap "Battery"\n'
-        '3. Select "Unrestricted"',
+        'Android may stop background apps to save battery, which can '
+        'interrupt playback during the night.\n\n'
+        'Tap Open settings, choose Battery and allow unrestricted battery '
+        'usage for Sleepy Capy. The exact wording varies by device.',
       ),
       actions: [
         TextButton(
@@ -503,9 +509,9 @@ class _SettingsSheetState extends State<SettingsSheet> {
         FilledButton(
           onPressed: () {
             Navigator.of(dialogContext).pop();
-            AppSettings.openAppSettings(type: AppSettingsType.settings);
+            _openBatterySettings();
           },
-          child: const Text('Turn Off'),
+          child: const Text('Open settings'),
         ),
       ],
     ),
