@@ -1,4 +1,5 @@
 import 'package:factory_billing/factory_billing.dart';
+import 'package:factory_ui/factory_ui.dart';
 import 'package:flutter/foundation.dart';
 
 /// The only place that decides what is Pro. Screens ask this class and never
@@ -22,6 +23,10 @@ class ProFeatures {
   bool get showAds => !isPro;
 
   bool get canSetIndividualVolume => isPro;
+
+  /// Capy Night is free; every other palette is Pro.
+  bool canUseTheme(FactoryPalette palette) =>
+      isPro || palette.id == FactoryPalette.capyNight.id;
 
   /// Gradual fade, custom duration and "stop at".
   bool get canUseAdvancedTimer => isPro;

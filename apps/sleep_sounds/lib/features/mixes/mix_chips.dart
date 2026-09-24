@@ -43,11 +43,13 @@ class MixChips extends StatelessWidget {
     final active = playback.isMix(mix);
     return Material(
       color: active
-          ? FactoryColors.activeSurface
-          : FactoryColors.surfaceElevated,
+          ? context.palette.activeSurface
+          : context.palette.surfaceElevated,
       shape: StadiumBorder(
         side: BorderSide(
-          color: active ? FactoryColors.activeOutline : FactoryColors.outline,
+          color: active
+              ? context.palette.activeOutline
+              : context.palette.outline,
           width: 1.2,
         ),
       ),
@@ -61,9 +63,9 @@ class MixChips extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: 8,
             children: [
-              const Icon(
+              Icon(
                 Symbols.queue_music_rounded,
-                color: FactoryColors.mist,
+                color: context.palette.mist,
                 size: 18,
               ),
               Text(

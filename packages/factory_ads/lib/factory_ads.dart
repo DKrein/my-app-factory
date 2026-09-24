@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:factory_core/factory_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -39,6 +40,11 @@ final class AdPlacement {
   static const bannerHome = AdPlacement(
     'banner_home',
     description: 'Banner display on home screen',
+  );
+
+  static const bannerSettings = AdPlacement(
+    'banner_settings',
+    description: 'Banner display on the settings screen',
   );
 
   static const interstitialAfterAction = AdPlacement(
@@ -96,6 +102,10 @@ abstract interface class AdsGateway {
   Future<AppResult<void>> initialize();
   bool get isInitialized;
 
+  /// Turns true once the SDK is initialized. [FactoryBannerAd] builds nothing,
+  /// and so loads no ad, before that.
+  ValueListenable<bool> get ready;
+
   Widget buildBanner({
     required String adUnitId,
     required AdPlacement placement,
@@ -113,17 +123,21 @@ abstract interface class AdsGateway {
 
 /// In-memory/mock implementation for tests and previews.
 final class PreviewAdsGateway implements AdsGateway {
-  PreviewAdsGateway({bool initialized = false}) : _isInitialized = initialized;
+  PreviewAdsGateway({bool initialized = false})
+    : _ready = ValueNotifier(initialized);
 
-  bool _isInitialized;
+  final ValueNotifier<bool> _ready;
   final List<AdPlacement> shownInterstitials = [];
 
   @override
-  bool get isInitialized => _isInitialized;
+  bool get isInitialized => _ready.value;
+
+  @override
+  ValueListenable<bool> get ready => _ready;
 
   @override
   Future<AppResult<void>> initialize() async {
-    _isInitialized = true;
+    _ready.value = true;
     return const Success(null);
   }
 
@@ -160,16 +174,23 @@ final class PreviewAdsGateway implements AdsGateway {
 final class GoogleMobileAdsGateway implements AdsGateway {
   GoogleMobileAdsGateway();
 
-  bool _initialized = false;
+  final ValueNotifier<bool> _ready = ValueNotifier(false);
 
   @override
-  bool get isInitialized => _initialized;
+  bool get isInitialized => _ready.value;
 
   @override
-  Future<AppResult<void>> initialize() async {
+  ValueListenable<bool> get ready => _ready;
+
+  /// Asks for the user's consent where the law requires it, then starts the
+  /// SDK.
+  @override
+  Future<AppResult<void>> initialize() => requestConsentAndInitialize();
+
+  Future<AppResult<void>> _initializeSdk() async {
     try {
       await MobileAds.instance.initialize();
-      _initialized = true;
+      _ready.value = true;
       return const Success(null);
     } catch (e) {
       return Failure(
@@ -193,7 +214,7 @@ final class GoogleMobileAdsGateway implements AdsGateway {
       () async {
         ConsentForm.loadAndShowConsentFormIfRequired((formError) async {
           // Initialize regardless of consent form result (offline or non-EEA still runs).
-          final initResult = await initialize();
+          final initResult = await _initializeSdk();
           if (!completer.isCompleted) {
             completer.complete(initResult);
           }
@@ -201,7 +222,7 @@ final class GoogleMobileAdsGateway implements AdsGateway {
       },
       (requestConsentError) async {
         // Fallback: network failure shouldn't block ads initialization.
-        final initResult = await initialize();
+        final initResult = await _initializeSdk();
         if (!completer.isCompleted) {
           completer.complete(initResult);
         }
@@ -384,11 +405,16 @@ class FactoryBannerAd extends StatelessWidget {
   final ValueChanged<bool>? onLoadedChanged;
 
   @override
-  Widget build(BuildContext context) => gateway.buildBanner(
-    adUnitId: adUnitId,
-    placement: placement,
-    policy: policy,
-    fallback: fallback,
-    onLoadedChanged: onLoadedChanged,
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+    valueListenable: gateway.ready,
+    builder: (context, ready, _) => ready
+        ? gateway.buildBanner(
+            adUnitId: adUnitId,
+            placement: placement,
+            policy: policy,
+            fallback: fallback,
+            onLoadedChanged: onLoadedChanged,
+          )
+        : fallback ?? const SizedBox.shrink(),
   );
 }

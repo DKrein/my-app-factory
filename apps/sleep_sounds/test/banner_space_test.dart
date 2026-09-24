@@ -3,6 +3,7 @@ import 'package:factory_audio/factory_audio.dart';
 import 'package:factory_billing/factory_billing.dart';
 import 'package:factory_core/factory_core.dart';
 import 'package:factory_storage/factory_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sleep_sounds/main.dart';
@@ -12,6 +13,9 @@ final class _FailingAdsGateway implements AdsGateway {
 
   @override
   bool get isInitialized => true;
+
+  @override
+  final ValueListenable<bool> ready = ValueNotifier(true);
 
   @override
   Future<AppResult<void>> initialize() async => const Success(null);

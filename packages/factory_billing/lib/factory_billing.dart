@@ -322,6 +322,11 @@ final class PlayBillingGateway implements BillingGateway {
   @override
   bool get isAvailable => _isAvailable;
 
+  /// True while the restore that runs at startup is delivering purchases.
+  /// They unlock entitlements but raise no "restored" event, so nothing is
+  /// announced at every launch.
+  bool _restoringAtStartup = false;
+
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   final StreamController<PurchaseEvent> _eventsController =
       StreamController<PurchaseEvent>.broadcast();
@@ -346,11 +351,27 @@ final class PlayBillingGateway implements BillingGateway {
           );
         },
       );
+      if (_isAvailable) await _restoreAtStartup();
       return const Success(null);
     } catch (e) {
       return Failure(
         AppFailure('Erro ao conectar ao serviço de cobrança.', cause: e),
       );
+    }
+  }
+
+  /// The store only reports purchases it is asked about, and entitlements
+  /// live in memory, so a buyer would lose what they bought at every launch.
+  Future<void> _restoreAtStartup() async {
+    _restoringAtStartup = true;
+    try {
+      await _inAppPurchase.restorePurchases();
+      // Lets the stream deliver what the store just reported.
+      await Future<void>.delayed(Duration.zero);
+    } catch (_) {
+      // Offline or Play unavailable: the user can still restore by hand.
+    } finally {
+      _restoringAtStartup = false;
     }
   }
 
@@ -401,15 +422,17 @@ final class PlayBillingGateway implements BillingGateway {
           entitlements.grant(unlocked);
 
           final isRestore = purchaseDetails.status == PurchaseStatus.restored;
-          _eventsController.add(
-            PurchaseEvent(
-              status: isRestore
-                  ? PurchaseProgressStatus.restored
-                  : PurchaseProgressStatus.purchased,
-              productId: purchaseDetails.productID,
-              unlockedEntitlements: unlocked,
-            ),
-          );
+          if (!(isRestore && _restoringAtStartup)) {
+            _eventsController.add(
+              PurchaseEvent(
+                status: isRestore
+                    ? PurchaseProgressStatus.restored
+                    : PurchaseProgressStatus.purchased,
+                productId: purchaseDetails.productID,
+                unlockedEntitlements: unlocked,
+              ),
+            );
+          }
 
           if (purchaseDetails.pendingCompletePurchase) {
             await _inAppPurchase.completePurchase(purchaseDetails);

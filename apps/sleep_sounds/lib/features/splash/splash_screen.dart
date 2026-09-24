@@ -60,7 +60,7 @@ class _AppSplashScreenState extends State<AppSplashScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: FactoryColors.night,
+    backgroundColor: context.palette.night,
     body: StarfieldBackground(
       child: Center(
         child: Padding(
@@ -68,12 +68,12 @@ class _AppSplashScreenState extends State<AppSplashScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Sleepy Capy',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w700,
-                  color: FactoryColors.ink,
+                  color: context.palette.ink,
                 ),
               ),
               const SizedBox(height: 20),
@@ -82,10 +82,10 @@ class _AppSplashScreenState extends State<AppSplashScreen> {
               Text(
                 _tagline,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w300,
-                  color: FactoryColors.mutedInk,
+                  color: context.palette.mutedInk,
                   height: 1.4,
                 ),
               ),

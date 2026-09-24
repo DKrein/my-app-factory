@@ -5,14 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('FactoryUI tokens', () {
     test('FactoryColors has defined palette', () {
-      expect(FactoryColors.night, const Color(0xFF0B1020));
-      expect(FactoryColors.surface, const Color(0xFF151C33));
-      expect(FactoryColors.moon, const Color(0xFFAFC8FF));
+      expect(FactoryPalette.capyNight.night, const Color(0xFF0B1020));
+      expect(FactoryPalette.capyNight.surface, const Color(0xFF151C33));
+      expect(FactoryPalette.capyNight.moon, const Color(0xFFAFC8FF));
     });
 
     test('divider is white at 8% opacity', () {
-      expect(FactoryColors.divider.a, closeTo(.08, .005));
-      expect(FactoryColors.divider.r, 1.0);
+      expect(FactoryPalette.capyNight.divider.a, closeTo(.08, .005));
+      expect(FactoryPalette.capyNight.divider.r, 1.0);
     });
 
     test('FactorySpacing has consistent scale', () {
@@ -27,7 +27,7 @@ void main() {
   group('factoryDarkTheme', () {
     test('dividers share color and a 16 dp inset', () {
       final divider = factoryDarkTheme().dividerTheme;
-      expect(divider.color, FactoryColors.divider);
+      expect(divider.color, FactoryPalette.capyNight.divider);
       expect(divider.indent, FactorySpacing.lg);
       expect(divider.endIndent, FactorySpacing.lg);
     });
@@ -36,9 +36,9 @@ void main() {
       final theme = factoryDarkTheme();
       expect(theme.useMaterial3, isTrue);
       expect(theme.brightness, Brightness.dark);
-      expect(theme.scaffoldBackgroundColor, FactoryColors.night);
-      expect(theme.colorScheme.primary, FactoryColors.moon);
-      expect(theme.colorScheme.surface, FactoryColors.surface);
+      expect(theme.scaffoldBackgroundColor, FactoryPalette.capyNight.night);
+      expect(theme.colorScheme.primary, FactoryPalette.capyNight.moon);
+      expect(theme.colorScheme.surface, FactoryPalette.capyNight.surface);
     });
   });
 }

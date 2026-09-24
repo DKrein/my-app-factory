@@ -2,21 +2,10 @@ library;
 
 import 'package:flutter/material.dart';
 
-export 'src/about_screen.dart';
+import 'src/palette.dart';
 
-abstract final class FactoryColors {
-  static const night = Color(0xFF0B1020);
-  static const surface = Color(0xFF151C33);
-  static const surfaceElevated = Color(0xFF1D2745);
-  static const moon = Color(0xFFAFC8FF);
-  static const mist = Color(0xFF8ED9C7);
-  static const ink = Color(0xFFF4F7FF);
-  static const mutedInk = Color(0xFFB8C1D9);
-  static const outline = Color(0xFF3B4768);
-  static const divider = Color(0x14FFFFFF);
-  static const activeSurface = Color(0xFF1E3550);
-  static const activeOutline = Color(0xFF8EC5F5);
-}
+export 'src/about_screen.dart';
+export 'src/palette.dart';
 
 abstract final class FactorySpacing {
   static const xs = 4.0;
@@ -27,37 +16,42 @@ abstract final class FactorySpacing {
   static const xxl = 32.0;
 }
 
-ThemeData factoryDarkTheme() {
-  const scheme = ColorScheme.dark(
-    primary: FactoryColors.moon,
-    onPrimary: FactoryColors.night,
-    secondary: FactoryColors.mist,
-    onSecondary: FactoryColors.night,
-    surface: FactoryColors.surface,
-    onSurface: FactoryColors.ink,
-    outline: FactoryColors.outline,
+/// The app theme for [palette]. Screens read colors from the palette through
+/// `context.palette`; this only wires Material widgets to the same colors.
+ThemeData factoryDarkTheme([
+  FactoryPalette palette = FactoryPalette.capyNight,
+]) {
+  final scheme = ColorScheme.dark(
+    primary: palette.moon,
+    onPrimary: palette.night,
+    secondary: palette.mist,
+    onSecondary: palette.night,
+    surface: palette.surface,
+    onSurface: palette.ink,
+    outline: palette.outline,
   );
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
-    scaffoldBackgroundColor: FactoryColors.night,
+    scaffoldBackgroundColor: palette.night,
+    extensions: [palette],
     textTheme: const TextTheme(
       displaySmall: TextStyle(fontSize: 32, fontWeight: FontWeight.w600),
       titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
       bodyMedium: TextStyle(fontSize: 15),
       labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
     ),
-    dividerTheme: const DividerThemeData(
-      color: FactoryColors.divider,
+    dividerTheme: DividerThemeData(
+      color: palette.divider,
       thickness: 1,
       space: 1,
       indent: FactorySpacing.lg,
       endIndent: FactorySpacing.lg,
     ),
-    cardTheme: const CardThemeData(
-      color: FactoryColors.surface,
+    cardTheme: CardThemeData(
+      color: palette.surface,
       elevation: 0,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
     ),

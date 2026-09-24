@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../factory_ui.dart' show FactoryColors, FactorySpacing;
+import '../factory_ui.dart' show FactoryPaletteContext, FactorySpacing;
 
 /// Opens [uri] outside the app. The app supplies it, so this package needs no
 /// plugin.
@@ -75,7 +75,7 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: FactoryColors.night,
+    backgroundColor: context.palette.night,
     appBar: AppBar(
       title: Text(labels.title),
       backgroundColor: Colors.transparent,
@@ -145,7 +145,7 @@ class CreditsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: FactoryColors.night,
+    backgroundColor: context.palette.night,
     appBar: AppBar(
       title: Text(labels.audioCredits),
       backgroundColor: Colors.transparent,
@@ -170,7 +170,7 @@ class CreditsScreen extends StatelessWidget {
                   minimumSize: const Size(0, 32),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   alignment: Alignment.centerLeft,
-                  foregroundColor: FactoryColors.mist,
+                  foregroundColor: context.palette.mist,
                 ),
                 onPressed: () => openLink(Uri.parse(entry.licenseUrl)),
                 child: Text(entry.license),
@@ -192,5 +192,5 @@ class _TileIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      Icon(icon, color: FactoryColors.mutedInk);
+      Icon(icon, color: context.palette.mutedInk);
 }

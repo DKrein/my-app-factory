@@ -4,23 +4,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('TemplateApp renders starter page and persists counter', (tester) async {
+  testWidgets('TemplateApp renders starter page and persists counter', (
+    tester,
+  ) async {
     final storage = MemoryKeyValueStore();
 
-    await tester.pumpWidget(
-      TemplateApp(storage: storage),
-    );
+    await tester.pumpWidget(TemplateApp(storage: storage));
     await tester.pumpAndSettle();
 
     expect(find.text('App Template'), findsOneWidget);
     expect(find.text('Bem-vindo!'), findsOneWidget);
-    expect(find.text('Ações realizadas e salvas no KeyValueStore: 0'), findsOneWidget);
+    expect(
+      find.text('Ações realizadas e salvas no KeyValueStore: 0'),
+      findsOneWidget,
+    );
 
     // Tap increment button
     await tester.tap(find.text('Incrementar Ação'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Ações realizadas e salvas no KeyValueStore: 1'), findsOneWidget);
+    expect(
+      find.text('Ações realizadas e salvas no KeyValueStore: 1'),
+      findsOneWidget,
+    );
 
     // Verify persisted in KeyValueStore
     final stored = await storage.readString('starter_counter');

@@ -23,6 +23,8 @@ import '../mixes/mix_chips.dart';
 import '../mixes/mix_dialogs.dart';
 import '../mixes/mix_library.dart';
 import '../pro/paywall_page.dart';
+import '../theme/theme_controller.dart';
+import '../theme/theme_picker.dart';
 import '../pro/pro_features.dart';
 import '../player/duration_carousel.dart';
 import '../player/sleep_duration.dart';
@@ -34,6 +36,7 @@ class LibraryPage extends StatefulWidget {
     super.key,
     required this.playback,
     required this.mixes,
+    required this.themes,
     required this.storage,
     required this.ads,
     required this.billing,
@@ -41,6 +44,7 @@ class LibraryPage extends StatefulWidget {
 
   final PlaybackController playback;
   final MixLibrary mixes;
+  final ThemeController themes;
   final KeyValueStore storage;
   final AdsGateway ads;
   final BillingGateway billing;
@@ -152,8 +156,8 @@ class _LibraryPageState extends State<LibraryPage> {
                                 child: Text(
                                   _timerStatus(),
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: FactoryColors.mist,
+                                  style: TextStyle(
+                                    color: context.palette.mist,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -275,20 +279,20 @@ class _LibraryPageState extends State<LibraryPage> {
           icon: Stack(
             clipBehavior: Clip.none,
             children: [
-              const Icon(
+              Icon(
                 Symbols.timer_rounded,
                 size: 26,
-                color: FactoryColors.mist,
+                color: context.palette.mist,
               ),
               if (locked)
-                const Positioned(
+                Positioned(
                   right: -4,
                   bottom: -4,
                   child: Icon(
                     Symbols.lock_rounded,
                     size: 13,
                     fill: 1,
-                    color: FactoryColors.mutedInk,
+                    color: context.palette.mutedInk,
                   ),
                 ),
             ],
@@ -326,18 +330,18 @@ class _LibraryPageState extends State<LibraryPage> {
               Symbols.bookmark_add_rounded,
               size: 26,
               color: enabled
-                  ? FactoryColors.mist
-                  : FactoryColors.mutedInk.withValues(alpha: .45),
+                  ? context.palette.mist
+                  : context.palette.mutedInk.withValues(alpha: .45),
             ),
             if (locked)
-              const Positioned(
+              Positioned(
                 right: -4,
                 bottom: -4,
                 child: Icon(
                   Symbols.lock_rounded,
                   size: 13,
                   fill: 1,
-                  color: FactoryColors.mutedInk,
+                  color: context.palette.mutedInk,
                 ),
               ),
           ],
@@ -354,7 +358,7 @@ class _LibraryPageState extends State<LibraryPage> {
         opacity: playback.hasSounds ? 1 : .35,
         duration: const Duration(milliseconds: 200),
         child: Material(
-          color: FactoryColors.moon,
+          color: context.palette.moon,
           shape: const CircleBorder(),
           child: IconButton(
             onPressed: playback.hasSounds
@@ -362,7 +366,7 @@ class _LibraryPageState extends State<LibraryPage> {
                 : () => ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Select a sound to play')),
                   ),
-            color: FactoryColors.night,
+            color: context.palette.night,
             icon: Icon(playback.playing ? Icons.pause : Icons.play_arrow),
             tooltip: playback.playing ? 'Pause' : 'Play',
           ),
@@ -376,11 +380,11 @@ class _LibraryPageState extends State<LibraryPage> {
     required VoidCallback onTap,
     required Widget child,
   }) => Card(
-    color: active ? FactoryColors.activeSurface : null,
+    color: active ? context.palette.activeSurface : null,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
       side: BorderSide(
-        color: active ? FactoryColors.activeOutline : Colors.transparent,
+        color: active ? context.palette.activeOutline : Colors.transparent,
         width: 1.5,
       ),
     ),
@@ -442,7 +446,7 @@ class _LibraryPageState extends State<LibraryPage> {
                   : null,
             ),
           ),
-          sound.icon.build(FactoryColors.mist, 34),
+          sound.icon.build(context.palette.mist, 34),
           const Spacer(),
           _cardLabel(sound.name),
           SizedBox(
@@ -458,13 +462,18 @@ class _LibraryPageState extends State<LibraryPage> {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: FactoryColors.night,
+    backgroundColor: context.palette.night,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
     builder: (_) => FractionallySizedBox(
       heightFactor: 1,
-      child: SettingsSheet(billing: widget.billing, storage: widget.storage),
+      child: SettingsSheet(
+        billing: widget.billing,
+        storage: widget.storage,
+        ads: widget.ads,
+        themes: widget.themes,
+      ),
     ),
   );
 }
@@ -474,10 +483,14 @@ class SettingsSheet extends StatefulWidget {
     super.key,
     required this.billing,
     required this.storage,
+    required this.ads,
+    required this.themes,
   });
 
   final BillingGateway billing;
   final KeyValueStore storage;
+  final AdsGateway ads;
+  final ThemeController themes;
 
   @override
   State<SettingsSheet> createState() => _SettingsSheetState();
@@ -585,7 +598,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
   Future<void> _showBatteryOptimizationDialog() => showDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      backgroundColor: FactoryColors.surfaceElevated,
+      backgroundColor: context.palette.surfaceElevated,
       title: const Text('Battery optimization'),
       content: const Text(
         'Android may stop background apps to save battery, which can '
@@ -690,19 +703,19 @@ class _SettingsSheetState extends State<SettingsSheet> {
                       children: [
                         if (isPremium)
                           Card(
-                            color: FactoryColors.surface,
+                            color: context.palette.surface,
                             child: ListTile(
-                              leading: const Icon(
+                              leading: Icon(
                                 Icons.verified,
-                                color: FactoryColors.mist,
+                                color: context.palette.mist,
                               ),
                               title: const Text('Sleepy Capy Pro'),
                               subtitle: const Text(
                                 'Thank you for supporting Sleepy Capy.',
                               ),
-                              trailing: const Icon(
+                              trailing: Icon(
                                 Icons.check,
-                                color: FactoryColors.mist,
+                                color: context.palette.mist,
                               ),
                             ),
                           )
@@ -711,28 +724,30 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: FactoryColors.surfaceElevated,
+                              color: context.palette.surfaceElevated,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: FactoryColors.outline),
+                              border: Border.all(
+                                color: context.palette.outline,
+                              ),
                             ),
                             child: Column(
                               children: [
-                                const Text(
+                                Text(
                                   'Sleepy Capy Pro',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: FactoryColors.ink,
+                                    color: context.palette.ink,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 16,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                const Text(
+                                Text(
                                   'Volume for each sound, saved mixes and more. '
                                   'One purchase, no ads.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: FactoryColors.mutedInk,
+                                    color: context.palette.mutedInk,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -741,8 +756,8 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                   onPressed: () =>
                                       PaywallPage.open(context, billing),
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: FactoryColors.mist,
-                                    foregroundColor: FactoryColors.night,
+                                    backgroundColor: context.palette.mist,
+                                    foregroundColor: context.palette.night,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 28,
                                       vertical: 12,
@@ -758,11 +773,17 @@ class _SettingsSheetState extends State<SettingsSheet> {
                               ],
                             ),
                           ),
+                        const SizedBox(height: 12),
+                        ThemePicker(
+                          themes: widget.themes,
+                          pro: pro,
+                          onLockedTap: () => PaywallPage.open(context, billing),
+                        ),
                         const SizedBox(height: 8),
                         ListTile(
-                          leading: const Icon(
+                          leading: Icon(
                             Icons.restore,
-                            color: FactoryColors.mutedInk,
+                            color: context.palette.mutedInk,
                           ),
                           title: const Text('Restore Purchase'),
                           onTap: () async {
@@ -772,9 +793,9 @@ class _SettingsSheetState extends State<SettingsSheet> {
                         ),
                         const Divider(),
                         ListTile(
-                          leading: const Icon(
+                          leading: Icon(
                             Icons.bedtime_outlined,
-                            color: FactoryColors.mutedInk,
+                            color: context.palette.mutedInk,
                           ),
                           title: const Text(
                             'Bedtime Reminder',
@@ -793,34 +814,34 @@ class _SettingsSheetState extends State<SettingsSheet> {
                           ),
                         ),
                         ListTile(
-                          leading: const Icon(
+                          leading: Icon(
                             Icons.star_outline,
-                            color: FactoryColors.mutedInk,
+                            color: context.palette.mutedInk,
                           ),
                           title: const Text('Rate Sleepy Capy'),
                           onTap: _rateUs,
                         ),
                         ListTile(
-                          leading: const Icon(
+                          leading: Icon(
                             Icons.mail_outline,
-                            color: FactoryColors.mutedInk,
+                            color: context.palette.mutedInk,
                           ),
                           title: const Text('Send Feedback'),
                           onTap: _sendFeedback,
                         ),
                         const Divider(),
                         ListTile(
-                          leading: const Icon(
+                          leading: Icon(
                             Icons.battery_alert_outlined,
-                            color: FactoryColors.mutedInk,
+                            color: context.palette.mutedInk,
                           ),
                           title: const Text('Playback stops unexpectedly?'),
                           onTap: _showBatteryOptimizationDialog,
                         ),
                         ListTile(
-                          leading: const Icon(
+                          leading: Icon(
                             Icons.info_outline,
-                            color: FactoryColors.mutedInk,
+                            color: context.palette.mutedInk,
                           ),
                           title: const Text('About'),
                           onTap: _openAbout,
@@ -829,6 +850,13 @@ class _SettingsSheetState extends State<SettingsSheet> {
                     ),
                   ),
                 ),
+                if (pro.showAds)
+                  FactoryBannerAd(
+                    gateway: widget.ads,
+                    adUnitId: AppConfig.bannerAdUnitId,
+                    placement: AdPlacement.bannerSettings,
+                    policy: CustomAdsPolicy((placement) => pro.showAds),
+                  ),
               ],
             ),
           ),

@@ -8,9 +8,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final storage = await SharedPreferencesStore.create();
 
-  runApp(
-    TemplateApp(storage: storage),
-  );
+  runApp(TemplateApp(storage: storage));
 }
 
 class TemplateApp extends StatelessWidget {
@@ -71,7 +69,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConfig.name),
-        backgroundColor: FactoryColors.surface,
+        backgroundColor: context.palette.surface,
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -91,9 +89,9 @@ class _HomePageState extends State<HomePage> {
                 style: Theme.of(context).textTheme.displaySmall,
               ),
               const SizedBox(height: FactorySpacing.sm),
-              const Text(
+              Text(
                 'Este é o ponto de partida para o seu novo aplicativo na App Factory.',
-                style: TextStyle(color: FactoryColors.mutedInk),
+                style: TextStyle(color: context.palette.mutedInk),
               ),
               const SizedBox(height: FactorySpacing.xl),
               Card(
@@ -104,7 +102,7 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.storage, color: FactoryColors.mist),
+                          Icon(Icons.storage, color: context.palette.mist),
                           const SizedBox(width: FactorySpacing.md),
                           Text(
                             'Persistência Local Ativa',
@@ -133,9 +131,9 @@ class _HomePageState extends State<HomePage> {
               Center(
                 child: Text(
                   '${AppConfig.applicationId} v${AppConfig.version}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: FactoryColors.mutedInk,
+                    color: context.palette.mutedInk,
                   ),
                 ),
               ),
@@ -149,11 +147,11 @@ class _HomePageState extends State<HomePage> {
   void _showAbout(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: FactoryColors.surfaceElevated,
+      backgroundColor: context.palette.surfaceElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => const SafeArea(
+      builder: (_) => SafeArea(
         child: Padding(
           padding: EdgeInsets.all(FactorySpacing.xl),
           child: Column(
@@ -168,7 +166,7 @@ class _HomePageState extends State<HomePage> {
               Text(
                 'Construído com Flutter sobre a base reutilizável da App Factory. '
                 'Totalmente offline-first, sem dependências ocultas de rede.',
-                style: TextStyle(color: FactoryColors.mutedInk),
+                style: TextStyle(color: context.palette.mutedInk),
               ),
             ],
           ),

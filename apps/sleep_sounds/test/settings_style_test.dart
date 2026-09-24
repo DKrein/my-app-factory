@@ -1,3 +1,4 @@
+import 'package:factory_ads/factory_ads.dart';
 import 'package:factory_billing/factory_billing.dart';
 import 'package:factory_storage/factory_storage.dart';
 import 'package:factory_ui/factory_ui.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sleep_sounds/features/common/starfield_background.dart';
 import 'package:sleep_sounds/features/library/library_page.dart';
+import 'package:sleep_sounds/features/theme/theme_controller.dart';
 import 'package:sleep_sounds/main.dart';
 
 Future<void> pumpSettings(WidgetTester tester) async {
@@ -21,6 +23,8 @@ Future<void> pumpSettings(WidgetTester tester) async {
             initialProducts: [defaultProProduct],
           ),
           storage: MemoryKeyValueStore(),
+          ads: PreviewAdsGateway(initialized: true),
+          themes: ThemeController(MemoryKeyValueStore()),
         ),
       ),
     ),
@@ -50,10 +54,13 @@ void main() {
           .first,
     );
     final decoration = card.decoration! as BoxDecoration;
-    expect(decoration.color, FactoryColors.surfaceElevated);
+    expect(decoration.color, FactoryPalette.capyNight.surfaceElevated);
 
     final button = tester.widget<FilledButton>(find.byType(FilledButton));
-    expect(button.style!.backgroundColor!.resolve({}), FactoryColors.mist);
+    expect(
+      button.style!.backgroundColor!.resolve({}),
+      FactoryPalette.capyNight.mist,
+    );
   });
 
   testWidgets('icon, text and switch of the reminder share one center line', (

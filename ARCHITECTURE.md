@@ -67,6 +67,8 @@ my-app-factory/
 
 O sentido das dependências é sempre do app para a infraestrutura. Nenhum pacote compartilhado deve importar `apps/`.
 
+**Cores e tema.** As cores de uma tela vêm da paleta do tema (`FactoryPalette`, em `factory_ui`), lida com `context.palette`. Nenhuma tela usa cor fixa. Trocar de tema é passar outra paleta ao `MaterialApp`. As regras e o passo a passo para criar uma paleta estão em `packages/factory_ui/README.md`.
+
 ## Comunicação entre módulos
 
 Módulos se comunicam por contratos Dart pequenos, injetados no ponto de composição (`main.dart`/`app.dart`) do aplicativo.

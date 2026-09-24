@@ -39,7 +39,7 @@ Future<void> showMixMenu(
   required SavedMix mix,
 }) => showModalBottomSheet<void>(
   context: context,
-  backgroundColor: FactoryColors.surfaceElevated,
+  backgroundColor: context.palette.surfaceElevated,
   builder: (sheetContext) => SafeArea(
     child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -75,7 +75,7 @@ Future<void> _confirmDelete(
 }) => showDialog<void>(
   context: context,
   builder: (dialogContext) => AlertDialog(
-    backgroundColor: FactoryColors.surfaceElevated,
+    backgroundColor: context.palette.surfaceElevated,
     title: Text('Delete "${mix.name}"?'),
     actions: [
       TextButton(
@@ -136,11 +136,11 @@ class _SaveMixDialogState extends State<_SaveMixDialog> {
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    sound.icon.build(FactoryColors.mist, 28),
+                    sound.icon.build(context.palette.mist, 28),
                     Text(
                       '${(widget.playback.volumeOf(sound) * 100).round()}%',
-                      style: const TextStyle(
-                        color: FactoryColors.mutedInk,
+                      style: TextStyle(
+                        color: context.palette.mutedInk,
                         fontSize: 11,
                       ),
                     ),
@@ -207,7 +207,7 @@ class _NameDialogState extends State<_NameDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: FactoryColors.surfaceElevated,
+    backgroundColor: context.palette.surfaceElevated,
     title: Text(widget.title),
     content: SingleChildScrollView(
       child: Column(

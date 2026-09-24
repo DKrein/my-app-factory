@@ -96,17 +96,21 @@ class _DurationCarouselState extends State<DurationCarousel> {
       final distance = (_page - index).abs();
       final t = (1 - distance).clamp(0.0, 1.0);
       final fontSize = (20 - 3.5 * distance).clamp(12.0, 20.0);
-      final color = Color.lerp(FactoryColors.mutedInk, FactoryColors.ink, t)!;
+      final color = Color.lerp(
+        context.palette.mutedInk,
+        context.palette.ink,
+        t,
+      )!;
       return Center(
         child: GestureDetector(
           onTap: () => _selectPage(index),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
-              color: FactoryColors.surfaceElevated.withValues(alpha: t * .9),
+              color: context.palette.surfaceElevated.withValues(alpha: t * .9),
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
-                color: FactoryColors.moon.withValues(alpha: .55 * t),
+                color: context.palette.moon.withValues(alpha: .55 * t),
               ),
             ),
             child: FittedBox(

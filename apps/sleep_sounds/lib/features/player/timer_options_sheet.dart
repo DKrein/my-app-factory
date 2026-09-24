@@ -11,7 +11,7 @@ Future<void> showTimerOptions(
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
-  backgroundColor: FactoryColors.surfaceElevated,
+  backgroundColor: context.palette.surfaceElevated,
   shape: const RoundedRectangleBorder(
     borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
   ),
@@ -79,7 +79,7 @@ class _TimerOptionsSheetState extends State<TimerOptionsSheet> {
   }) => DropdownButton<int>(
     value: value,
     isExpanded: true,
-    dropdownColor: FactoryColors.surfaceElevated,
+    dropdownColor: context.palette.surfaceElevated,
     underline: const SizedBox.shrink(),
     items: [
       for (var i = 0; i < count; i++)
@@ -209,7 +209,7 @@ class _TimerOptionsSheetState extends State<TimerOptionsSheet> {
                     Expanded(
                       child: Text(
                         'in ${formatSleepRemaining(_playback.secondsUntilNext(_stopAt))}',
-                        style: const TextStyle(color: FactoryColors.mutedInk),
+                        style: TextStyle(color: context.palette.mutedInk),
                       ),
                     ),
                     FilledButton(

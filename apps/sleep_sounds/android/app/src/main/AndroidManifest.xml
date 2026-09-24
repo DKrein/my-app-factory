@@ -21,6 +21,12 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"/>
+        <!-- The AdMob SDK starts itself at launch through this provider. It is
+             removed so the app starts the SDK on its own, and never for Pro. -->
+        <provider
+            android:name="com.google.android.gms.ads.MobileAdsInitProvider"
+            android:authorities="${applicationId}.mobileadsinitprovider"
+            tools:node="remove"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

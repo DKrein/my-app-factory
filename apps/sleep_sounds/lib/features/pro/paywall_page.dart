@@ -138,7 +138,7 @@ class _PaywallPageState extends State<PaywallPage> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: _pro.changes,
     builder: (context, _) => Scaffold(
-      backgroundColor: FactoryColors.night,
+      backgroundColor: context.palette.night,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
@@ -160,7 +160,7 @@ class _PaywallPageState extends State<PaywallPage> {
             _pro.isPro
                 ? 'Thank you for supporting Sleepy Capy.'
                 : 'One purchase, yours to keep. No subscription.',
-            style: const TextStyle(color: FactoryColors.mutedInk, fontSize: 16),
+            style: TextStyle(color: context.palette.mutedInk, fontSize: 16),
           ),
           const SizedBox(height: 24),
           for (final (icon, text) in _features)
@@ -168,16 +168,16 @@ class _PaywallPageState extends State<PaywallPage> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
                 children: [
-                  Icon(icon, color: FactoryColors.mist, size: 26),
+                  Icon(icon, color: context.palette.mist, size: 26),
                   const SizedBox(width: 16),
                   Expanded(child: Text(text)),
                 ],
               ),
             ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'All 17 sounds, mixing and the timer stay free.',
-            style: TextStyle(color: FactoryColors.mutedInk),
+            style: TextStyle(color: context.palette.mutedInk),
           ),
           const SizedBox(height: 32),
           if (!_pro.isPro) ..._purchaseSection(),
@@ -200,9 +200,9 @@ class _PaywallPageState extends State<PaywallPage> {
       if (_load == _Load.loading)
         const Center(child: CircularProgressIndicator())
       else if (_load == _Load.failed) ...[
-        const Text(
+        Text(
           "Can't reach the store right now. Check your connection and try again.",
-          style: TextStyle(color: FactoryColors.mutedInk),
+          style: TextStyle(color: context.palette.mutedInk),
         ),
         const SizedBox(height: 12),
         OutlinedButton(onPressed: _loadProduct, child: const Text('Try again')),
@@ -216,9 +216,11 @@ class _PaywallPageState extends State<PaywallPage> {
         FilledButton(
           onPressed: _notice == _Notice.pending ? null : _buy,
           style: FilledButton.styleFrom(
-            backgroundColor: FactoryColors.mist,
-            foregroundColor: FactoryColors.night,
-            disabledBackgroundColor: FactoryColors.mist.withValues(alpha: .25),
+            backgroundColor: context.palette.mist,
+            foregroundColor: context.palette.night,
+            disabledBackgroundColor: context.palette.mist.withValues(
+              alpha: .25,
+            ),
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
           child: const Text(
@@ -229,7 +231,7 @@ class _PaywallPageState extends State<PaywallPage> {
       ],
       if (noticeText != null) ...[
         const SizedBox(height: 16),
-        Text(noticeText, style: const TextStyle(color: FactoryColors.moon)),
+        Text(noticeText, style: TextStyle(color: context.palette.moon)),
       ],
       const SizedBox(height: 8),
       Center(

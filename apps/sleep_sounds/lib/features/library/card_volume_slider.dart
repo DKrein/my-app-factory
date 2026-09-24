@@ -27,10 +27,10 @@ class CardVolumeSlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
     height: height,
-    child: locked ? _lockedTrack() : _slider(context),
+    child: locked ? _lockedTrack(context) : _slider(context),
   );
 
-  Widget _lockedTrack() => Semantics(
+  Widget _lockedTrack(BuildContext context) => Semantics(
     button: true,
     label: 'Volume, a Pro feature',
     child: GestureDetector(
@@ -42,17 +42,17 @@ class CardVolumeSlider extends StatelessWidget {
             child: Container(
               height: 4,
               decoration: BoxDecoration(
-                color: FactoryColors.outline,
+                color: context.palette.outline,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
           const SizedBox(width: 6),
-          const Icon(
+          Icon(
             Symbols.lock_rounded,
             size: 14,
             fill: 1,
-            color: FactoryColors.mutedInk,
+            color: context.palette.mutedInk,
           ),
         ],
       ),
@@ -62,10 +62,10 @@ class CardVolumeSlider extends StatelessWidget {
   Widget _slider(BuildContext context) => SliderTheme(
     data: SliderTheme.of(context).copyWith(
       trackHeight: 4,
-      activeTrackColor: FactoryColors.mist,
-      inactiveTrackColor: FactoryColors.mist.withValues(alpha: .35),
-      thumbColor: FactoryColors.mist,
-      overlayColor: FactoryColors.mist.withValues(alpha: .16),
+      activeTrackColor: context.palette.mist,
+      inactiveTrackColor: context.palette.mist.withValues(alpha: .35),
+      thumbColor: context.palette.mist,
+      overlayColor: context.palette.mist.withValues(alpha: .16),
       thumbShape: const RoundSliderThumbShape(
         enabledThumbRadius: 6,
         elevation: 0,

@@ -76,9 +76,14 @@ class _StarfieldBackgroundState extends State<StarfieldBackground> {
               width: size.width + _tile * 2,
               height: size.height + _tile * 2,
               decoration: BoxDecoration(
-                color: FactoryColors.night,
+                color: context.palette.night,
                 image: DecorationImage(
                   image: const AssetImage('assets/branding/starfield.png'),
+                  // The stars are white on every theme.
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
                   opacity: widget.starOpacity,
                   repeat: ImageRepeat.repeat,
                 ),

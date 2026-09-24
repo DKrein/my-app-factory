@@ -94,7 +94,7 @@ void main() {
     testWidgets('FactoryBannerAd builds properly with PreviewAdsGateway', (
       tester,
     ) async {
-      final gateway = PreviewAdsGateway();
+      final gateway = PreviewAdsGateway(initialized: true);
 
       // When policy allows
       await tester.pumpWidget(
@@ -129,6 +129,49 @@ void main() {
 
       expect(find.text('Preview Ad [banner_home]'), findsNothing);
       expect(find.text('No Ads'), findsOneWidget);
+    });
+
+    testWidgets('no banner is built until the SDK is ready', (tester) async {
+      final gateway = PreviewAdsGateway();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FactoryBannerAd(
+              gateway: gateway,
+              adUnitId: AdmobTestUnits.androidBanner,
+              placement: AdPlacement.bannerHome,
+              policy: const AlwaysShowAdsPolicy(),
+              fallback: const Text('waiting'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Preview Ad [banner_home]'), findsNothing);
+      expect(find.text('waiting'), findsOneWidget);
+
+      await gateway.initialize();
+      await tester.pump();
+
+      expect(find.text('Preview Ad [banner_home]'), findsOneWidget);
+      expect(find.text('waiting'), findsNothing);
+    });
+
+    test('ready follows initialization', () async {
+      final gateway = PreviewAdsGateway();
+
+      expect(gateway.ready.value, isFalse);
+      expect(gateway.isInitialized, isFalse);
+
+      await gateway.initialize();
+
+      expect(gateway.ready.value, isTrue);
+      expect(gateway.isInitialized, isTrue);
+    });
+
+    test('the settings placement is its own', () {
+      expect(AdPlacement.bannerSettings.id, 'banner_settings');
+      expect(AdPlacement.bannerSettings, isNot(AdPlacement.bannerHome));
     });
   });
 }

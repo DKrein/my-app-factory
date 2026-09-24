@@ -52,6 +52,8 @@ void main() {
     expect(find.text('Privacy Policy'), findsNothing);
     expect(find.text('App Version'), findsNothing);
 
+    await tester.ensureVisible(find.text('About'));
+    await tester.pump();
     await tester.tap(find.text('About'));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 50)),

@@ -79,7 +79,7 @@ class _EqualizerBarsState extends State<EqualizerBars>
                 width: _barWidth,
                 height: _height * _level(i),
                 decoration: BoxDecoration(
-                  color: FactoryColors.mist,
+                  color: context.palette.mist,
                   borderRadius: BorderRadius.circular(_barWidth / 2),
                 ),
               ),

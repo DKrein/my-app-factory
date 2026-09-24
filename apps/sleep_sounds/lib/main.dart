@@ -11,6 +11,7 @@ import 'features/library/library_page.dart';
 import 'features/mixes/mix_library.dart';
 import 'features/player/player_controller.dart';
 import 'features/pro/pro_features.dart';
+import 'features/theme/theme_controller.dart';
 import 'features/reminders/bedtime_reminder.dart';
 import 'features/splash/splash_screen.dart';
 
@@ -53,8 +54,6 @@ void main() async {
         .then((_) => bedtimeReminders.restore(storage))
         .catchError((_) {}),
   );
-  unawaited(ads.initialize());
-  unawaited(billing.initialize());
 
   runApp(
     SleepSoundsApp(
@@ -89,6 +88,8 @@ class SleepSoundsApp extends StatefulWidget {
 class _SleepSoundsAppState extends State<SleepSoundsApp> {
   late final PlaybackController _playback;
   late final MixLibrary _mixes;
+  late final ThemeController _themes;
+  final _storeSettled = ValueNotifier(false);
   late final KeyValueStore _storage;
   late final AdsGateway _ads;
   late final BillingGateway _billing;
@@ -108,6 +109,8 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
     unawaited(_playback.restore());
     _mixes = MixLibrary(_storage);
     unawaited(_mixes.load());
+    _themes = ThemeController(_storage);
+    unawaited(_themes.load());
     widget.nowPlaying?.bindTransport(
       onPlay: _playback.togglePlaying,
       onPause: _playback.togglePlaying,
@@ -119,28 +122,59 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
           catalog: sleepSoundsCatalog,
           initialProducts: [defaultProProduct],
         );
+    unawaited(_initializeMonetization());
+  }
+
+  /// Opens the store first: what the user owns decides whether the ad SDK is
+  /// started at all. Pro users never start it.
+  Future<void> _initializeMonetization() async {
+    await _billing.initialize();
+    if (!mounted) return;
+    _storeSettled.value = true;
+    if (ProFeatures(_billing.entitlements).showAds) await _ads.initialize();
   }
 
   @override
   void dispose() {
     _playback.dispose();
     _mixes.dispose();
+    _themes.dispose();
+    _storeSettled.dispose();
     super.dispose();
   }
 
+  /// The picked palette, unless it needs Pro and the user has not got it.
+  /// Until the store has answered, the picked one is shown so a Pro user does
+  /// not see the default flash at every launch.
+  FactoryPalette get _palette {
+    final picked = _themes.selected;
+    final pro = ProFeatures(_billing.entitlements);
+    return _storeSettled.value && !pro.canUseTheme(picked)
+        ? FactoryPalette.capyNight
+        : picked;
+  }
+
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: AppConfig.name,
-    debugShowCheckedModeBanner: false,
-    theme: factoryDarkTheme(),
-    home: AppSplashScreen(
-      storage: _storage,
-      next: LibraryPage(
-        playback: _playback,
-        mixes: _mixes,
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([
+      _themes,
+      _storeSettled,
+      ProFeatures(_billing.entitlements).changes,
+    ]),
+    builder: (context, _) => MaterialApp(
+      title: AppConfig.name,
+      debugShowCheckedModeBanner: false,
+      theme: factoryDarkTheme(_palette),
+      home: AppSplashScreen(
         storage: _storage,
-        ads: _ads,
-        billing: _billing,
+        next: LibraryPage(
+          playback: _playback,
+          mixes: _mixes,
+          themes: _themes,
+          storage: _storage,
+          ads: _ads,
+          billing: _billing,
+        ),
       ),
     ),
   );
