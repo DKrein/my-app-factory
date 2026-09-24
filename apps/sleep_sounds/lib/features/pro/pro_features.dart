@@ -17,4 +17,6 @@ class ProFeatures {
   bool get isPro => _entitlements.has(entitlement);
 
   bool get showAds => !isPro;
+
+  bool get canSetIndividualVolume => isPro;
 }

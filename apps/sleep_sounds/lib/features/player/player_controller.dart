@@ -25,6 +25,8 @@ class PlaybackController extends ChangeNotifier {
   static const _sessionKey = 'last_session_v1';
   static const _masterGain = .7;
   static const _rampDuration = Duration(milliseconds: 250);
+  static const _dragRamp = Duration(milliseconds: 50);
+  static const minVolume = .1;
   static const _fadeInDuration = Duration(milliseconds: 1500);
   static const _fadeOutDuration = Duration(seconds: 1);
   static const _timerFadeDuration = Duration(seconds: 4);
@@ -37,21 +39,47 @@ class PlaybackController extends ChangeNotifier {
   bool _timerFading = false;
 
   bool playing = false;
+  final Map<String, double> _volumes = {};
   int timerMinutes = defaultSleepMinutes;
   int remainingSeconds = 0;
 
-  /// Volume of each layer when [count] sounds play together.
+  /// Gain of a layer with individual [volume] (0..1) in a mix whose volumes
+  /// squared add up to [sumOfSquares].
   ///
   /// Ambient sounds are uncorrelated, so their powers add: n sounds at the
   /// same gain are 10*log10(n) dB louder (+7 dB with 5 sounds) and their peaks
-  /// approach clipping. Scaling each layer by 1/sqrt(n) keeps the mix power
-  /// equal to the average single sound, and one sound stays at [_masterGain].
-  /// See apps/sleep_sounds/docs/adr/0001-mix-headroom.md.
+  /// approach clipping. Dividing by the root of the summed squares keeps the
+  /// mix power equal to the average single sound, and one sound at full volume
+  /// stays at [_masterGain]. See apps/sleep_sounds/docs/adr/0001-mix-headroom.md.
   @visibleForTesting
-  static double gainFor(int count) =>
-      _masterGain / math.sqrt(math.max(1, count));
+  static double mixGain(double volume, double sumOfSquares) =>
+      _masterGain * volume / math.sqrt(math.max(1, sumOfSquares));
 
-  double get _layerGain => gainFor(_active.length);
+  double _gainOf(String id) => mixGain(
+    _volumes[id] ?? 1,
+    _active.keys.fold(0.0, (sum, id) {
+      final v = _volumes[id] ?? 1;
+      return sum + v * v;
+    }),
+  );
+
+  /// Individual volume of [sound], from [minVolume] to 1.
+  double volumeOf(Sound sound) => _volumes[sound.id] ?? 1;
+
+  /// Sets the individual volume of a selected [sound]. Every layer's gain is
+  /// rebalanced. Call [commitVolumes] when the user lets go.
+  void setSoundVolume(Sound sound, double volume) {
+    if (!isSelected(sound)) return;
+    _volumes[sound.id] = volume.clamp(minVolume, 1.0);
+    if (playing) {
+      for (final entry in _active.entries) {
+        unawaited(entry.value.gateway.fadeTo(_gainOf(entry.key), _dragRamp));
+      }
+    }
+    notifyListeners();
+  }
+
+  void commitVolumes() => _saveSession();
 
   bool get hasSounds => _active.isNotEmpty;
 
@@ -66,11 +94,18 @@ class PlaybackController extends ChangeNotifier {
       final json = jsonDecode(raw) as Map<String, dynamic>;
       final ids = (json['soundIds'] as List).cast<String>();
       final minutes = json['timerMinutes'] as int;
+      final volumes = (json['volumes'] as Map<String, dynamic>?) ?? const {};
       for (final sound in sounds.where((s) => ids.contains(s.id))) {
         _active[sound.id] = (
           sound: sound,
           gateway: _createGateway(ownsAudioSession: _active.isEmpty),
         );
+      }
+      for (final id in _active.keys) {
+        final volume = volumes[id];
+        if (volume is num) {
+          _volumes[id] = volume.toDouble().clamp(minVolume, 1.0);
+        }
       }
       if (sleepDurations.any((d) => d.minutes == minutes)) {
         timerMinutes = minutes;
@@ -88,6 +123,7 @@ class PlaybackController extends ChangeNotifier {
         jsonEncode({
           'soundIds': _active.keys.toList(),
           'timerMinutes': timerMinutes,
+          'volumes': {for (final id in _active.keys) id: _volumes[id] ?? 1},
         }),
       ),
     );
@@ -169,7 +205,7 @@ class PlaybackController extends ChangeNotifier {
   }) async {
     await layer.gateway.setVolume(0);
     await layer.gateway.play(layer.sound.asset, title: layer.sound.name);
-    unawaited(layer.gateway.fadeTo(_layerGain, fadeIn));
+    unawaited(layer.gateway.fadeTo(_gainOf(layer.sound.id), fadeIn));
   }
 
   /// Fades the layers out and pauses them, unless playback resumed meanwhile.
@@ -184,6 +220,7 @@ class PlaybackController extends ChangeNotifier {
 
   Future<void> _deselect(Sound sound) async {
     final layer = _active.remove(sound.id)!;
+    _volumes.remove(sound.id);
     _saveSession();
     if (_active.isEmpty) {
       playing = false;
@@ -204,7 +241,7 @@ class PlaybackController extends ChangeNotifier {
   void _rebalance({String? except}) {
     for (final entry in _active.entries) {
       if (entry.key == except) continue;
-      unawaited(entry.value.gateway.fadeTo(_layerGain, _rampDuration));
+      unawaited(entry.value.gateway.fadeTo(_gainOf(entry.key), _rampDuration));
     }
   }
 

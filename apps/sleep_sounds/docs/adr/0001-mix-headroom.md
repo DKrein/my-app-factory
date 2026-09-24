@@ -28,9 +28,9 @@ Cada faixa toca com ganho
 g_i = 0.7 · v_i / sqrt(max(1, Σ v_j²))
 ```
 
-em que `v_i` é o volume individual da faixa (1,0 enquanto não existir controle por som). Sons de ambiente são descorrelacionados, então as potências somam. Com `1/sqrt(n)`, a potência do mix fica igual à de um som médio a 0,7, e com um som só nada muda.
+em que `v_i` é o volume individual da faixa, de 0,1 a 1,0. Ele é 1,0 para todos até o Pro liberar o controle por som (ADR 0002); a partir daí, cada slider entra na soma dos quadrados, então baixar um som também sobe levemente os outros. Sons de ambiente são descorrelacionados, então as potências somam. Com `1/sqrt(n)`, a potência do mix fica igual à de um som médio a 0,7, e com um som só nada muda.
 
-A mudança de ganho ao adicionar ou remover um som é uma rampa linear de 250 ms, nunca um degrau. Implementação: `PlaybackController.gainFor` e `AudioGateway.fadeTo`.
+A mudança de ganho ao adicionar ou remover um som é uma rampa linear de 250 ms, nunca um degrau. Implementação: `PlaybackController.mixGain` e `AudioGateway.fadeTo`. Ao arrastar um slider, os ganhos de todas as faixas são recalculados com rampa de 50 ms, para não gerar cliques.
 
 ## Medição depois
 

@@ -16,6 +16,7 @@ import '../../app_config.g.dart';
 import '../../content/credits.dart';
 import '../../content/sounds.dart';
 import '../common/starfield_background.dart';
+import 'card_volume_slider.dart';
 import 'equalizer_bars.dart';
 import '../player/player_controller.dart';
 import '../pro/paywall_page.dart';
@@ -205,9 +206,9 @@ class _LibraryPageState extends State<LibraryPage> {
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: sounds.length,
                             gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 3,
-                                  childAspectRatio: .85,
+                                  mainAxisExtent: _cardHeight(context),
                                   crossAxisSpacing: 10,
                                   mainAxisSpacing: 10,
                                 ),
@@ -300,6 +301,14 @@ class _LibraryPageState extends State<LibraryPage> {
   );
 
   static const _heartSlotHeight = 32.0;
+  static const _cardBaseHeight = 152.0;
+
+  /// Grows with the system font size so a two-line name still fits above the
+  /// volume slider.
+  double _cardHeight(BuildContext context) {
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    return _cardBaseHeight * scale.clamp(1.0, 1.6);
+  }
 
   Widget _heart({
     required bool filled,
@@ -338,6 +347,17 @@ class _LibraryPageState extends State<LibraryPage> {
     return const SizedBox.shrink();
   }
 
+  Widget _volumeSlider(Sound sound) => Padding(
+    padding: const EdgeInsets.only(top: 4),
+    child: CardVolumeSlider(
+      volume: widget.playback.volumeOf(sound),
+      locked: !ProFeatures(widget.billing.entitlements).canSetIndividualVolume,
+      onChanged: (v) => widget.playback.setSoundVolume(sound, v),
+      onChangeEnd: (_) => widget.playback.commitVolumes(),
+      onLockedTap: () => PaywallPage.open(context, widget.billing),
+    ),
+  );
+
   Widget _card(Sound sound) {
     final active = widget.playback.isSelected(sound);
     return _cardShell(
@@ -365,6 +385,10 @@ class _LibraryPageState extends State<LibraryPage> {
           sound.icon.build(FactoryColors.mist, 34),
           const Spacer(),
           _cardLabel(sound.name),
+          SizedBox(
+            height: CardVolumeSlider.height + 4,
+            child: active ? _volumeSlider(sound) : null,
+          ),
         ],
       ),
     );

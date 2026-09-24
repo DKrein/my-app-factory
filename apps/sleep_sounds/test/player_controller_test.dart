@@ -110,7 +110,7 @@ void main() {
 
       expect(gateways.single.fades, [
         (
-          volume: PlaybackController.gainFor(1),
+          volume: PlaybackController.mixGain(1, 1),
           duration: const Duration(milliseconds: 1500),
         ),
       ]);
@@ -132,7 +132,7 @@ void main() {
       await playback.togglePlaying();
 
       expect(gateways.single.fades.last, (
-        volume: PlaybackController.gainFor(1),
+        volume: PlaybackController.mixGain(1, 1),
         duration: const Duration(milliseconds: 1500),
       ));
       expect(gateways.single.playingAsset, rain.asset);
@@ -146,7 +146,7 @@ void main() {
       await playback.toggle(crickets);
 
       expect(gateways.last.fades.single, (
-        volume: PlaybackController.gainFor(2),
+        volume: PlaybackController.mixGain(1, 2),
         duration: const Duration(milliseconds: 250),
       ));
       playback.dispose();
@@ -198,7 +198,7 @@ void main() {
         playback.setTimer(30);
 
         expect(gateways.single.fades.last, (
-          volume: PlaybackController.gainFor(1),
+          volume: PlaybackController.mixGain(1, 1),
           duration: const Duration(milliseconds: 250),
         ));
         expect(playback.remainingSeconds, 30 * 60);
@@ -207,19 +207,126 @@ void main() {
     );
   });
 
+  group('individual volume', () {
+    test('a quieter sound counts less in the headroom', () {
+      const sumOfSquares = 1 + .25;
+
+      expect(
+        PlaybackController.mixGain(1, sumOfSquares),
+        closeTo(.7 / 1.118033988749895, 1e-9),
+      );
+      expect(
+        PlaybackController.mixGain(.5, sumOfSquares),
+        closeTo(.35 / 1.118033988749895, 1e-9),
+      );
+    });
+
+    testWidgets('changing one volume rebalances every layer', (tester) async {
+      await playback.toggle(rain);
+      await playback.toggle(crickets);
+
+      playback.setSoundVolume(rain, .5);
+
+      expect(playback.volumeOf(rain), .5);
+      expect(playback.volumeOf(crickets), 1);
+      expect(gateways.first.volume, PlaybackController.mixGain(.5, 1.25));
+      expect(gateways.last.volume, PlaybackController.mixGain(1, 1.25));
+      expect(gateways.first.lastFadeDuration, const Duration(milliseconds: 50));
+      playback.dispose();
+    });
+
+    testWidgets('volume never goes below the minimum or above 1', (
+      tester,
+    ) async {
+      await playback.toggle(rain);
+
+      playback.setSoundVolume(rain, 0);
+      expect(playback.volumeOf(rain), PlaybackController.minVolume);
+
+      playback.setSoundVolume(rain, 3);
+      expect(playback.volumeOf(rain), 1);
+      playback.dispose();
+    });
+
+    testWidgets('a sound that is not selected has no volume to set', (
+      tester,
+    ) async {
+      playback.setSoundVolume(rain, .4);
+
+      expect(playback.volumeOf(rain), 1);
+    });
+
+    testWidgets('stopping a sound forgets its volume', (tester) async {
+      await playback.toggle(rain);
+      playback.setSoundVolume(rain, .4);
+
+      await playback.toggle(rain);
+      await playback.toggle(rain);
+
+      expect(playback.volumeOf(rain), 1);
+      playback.dispose();
+    });
+
+    test('committed volumes come back with the session', () async {
+      final storage = MemoryKeyValueStore();
+      final first = PlaybackController(
+        createGateway: createGateway,
+        storage: storage,
+      );
+      await first.toggle(rain);
+      await first.toggle(crickets);
+      first.setSoundVolume(rain, .3);
+      first.commitVolumes();
+      first.dispose();
+      gateways.clear();
+
+      final restored = PlaybackController(
+        createGateway: createGateway,
+        storage: storage,
+      );
+      await restored.restore();
+
+      expect(restored.volumeOf(rain), .3);
+      expect(restored.volumeOf(crickets), 1);
+
+      await restored.togglePlaying();
+
+      expect(gateways.first.volume, PlaybackController.mixGain(.3, 1.09));
+      restored.dispose();
+    });
+
+    test('a session saved without volumes still restores', () async {
+      final storage = MemoryKeyValueStore();
+      await storage.writeString(
+        'last_session_v1',
+        '{"soundIds":["rain"],"timerMinutes":60}',
+      );
+      final restored = PlaybackController(
+        createGateway: createGateway,
+        storage: storage,
+      );
+      await restored.restore();
+
+      expect(restored.isSelected(rain), isTrue);
+      expect(restored.volumeOf(rain), 1);
+    });
+  });
+
   group('mix headroom', () {
     final waves = sounds.firstWhere((s) => s.id == 'waves');
 
     test('gain is 0.7 for one sound and falls with 1/sqrt(n)', () {
-      expect(PlaybackController.gainFor(0), .7);
-      expect(PlaybackController.gainFor(1), .7);
-      expect(PlaybackController.gainFor(3), closeTo(.7 / 1.7320508, 1e-6));
-      expect(PlaybackController.gainFor(5), closeTo(.7 / 2.2360680, 1e-6));
+      expect(PlaybackController.mixGain(1, 0), .7);
+      expect(PlaybackController.mixGain(1, 1), .7);
+      expect(PlaybackController.mixGain(1, 3), closeTo(.7 / 1.7320508, 1e-6));
+      expect(PlaybackController.mixGain(1, 5), closeTo(.7 / 2.2360680, 1e-6));
     });
 
     test('mix power stays constant as sounds are added', () {
       double power(int n) =>
-          n * PlaybackController.gainFor(n) * PlaybackController.gainFor(n);
+          n *
+          PlaybackController.mixGain(1, n.toDouble()) *
+          PlaybackController.mixGain(1, n.toDouble());
       expect(power(5), closeTo(power(1), 1e-9));
     });
 
@@ -227,16 +334,16 @@ void main() {
       tester,
     ) async {
       await playback.toggle(rain);
-      expect(gateways.first.volume, PlaybackController.gainFor(1));
+      expect(gateways.first.volume, PlaybackController.mixGain(1, 1));
 
       await playback.toggle(crickets);
 
-      expect(gateways.first.volume, PlaybackController.gainFor(2));
+      expect(gateways.first.volume, PlaybackController.mixGain(1, 2));
       expect(
         gateways.first.lastFadeDuration,
         const Duration(milliseconds: 250),
       );
-      expect(gateways.last.volume, PlaybackController.gainFor(2));
+      expect(gateways.last.volume, PlaybackController.mixGain(1, 2));
       playback.dispose();
     });
 
@@ -244,12 +351,12 @@ void main() {
       await playback.toggle(rain);
       await playback.toggle(crickets);
       await playback.toggle(waves);
-      expect(gateways.first.volume, PlaybackController.gainFor(3));
+      expect(gateways.first.volume, PlaybackController.mixGain(1, 3));
 
       await playback.toggle(waves);
 
-      expect(gateways.first.volume, PlaybackController.gainFor(2));
-      expect(gateways[1].volume, PlaybackController.gainFor(2));
+      expect(gateways.first.volume, PlaybackController.mixGain(1, 2));
+      expect(gateways[1].volume, PlaybackController.mixGain(1, 2));
       expect(
         gateways.first.lastFadeDuration,
         const Duration(milliseconds: 250),
