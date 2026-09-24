@@ -9,9 +9,8 @@ import 'package:sleep_sounds/features/pro/paywall_page.dart';
 import 'package:sleep_sounds/features/pro/pro_features.dart';
 import 'package:sleep_sounds/main.dart';
 
-Future<void> pumpPastSplash(WidgetTester tester) async {
+Future<void> settleApp(WidgetTester tester) async {
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 3500));
   await tester.pumpAndSettle();
 }
 
@@ -80,7 +79,7 @@ void main() {
         billing: billing,
       ),
     );
-    await pumpPastSplash(tester);
+    await settleApp(tester);
 
     expect(find.text('Time to capy-nap'), findsOneWidget);
     expect(find.text('Rain'), findsOneWidget);
@@ -111,7 +110,7 @@ void main() {
         billing: FakeBillingGateway(catalog: sleepSoundsCatalog),
       ),
     );
-    await pumpPastSplash(tester);
+    await settleApp(tester);
 
     expect(find.text('Paused'), findsOneWidget);
     expect(find.text('3h'), findsOneWidget);
@@ -148,7 +147,7 @@ void main() {
         billing: billing,
       ),
     );
-    await pumpPastSplash(tester);
+    await settleApp(tester);
 
     expect(find.byType(PaywallPage), findsNothing);
     expect(find.text('Preview Ad [banner_home]'), findsOneWidget);
@@ -188,7 +187,7 @@ void main() {
         billing: FakeBillingGateway(catalog: sleepSoundsCatalog),
       ),
     );
-    await pumpPastSplash(tester);
+    await settleApp(tester);
   }
 
   testWidgets('only selected cards show the equalizer', (tester) async {

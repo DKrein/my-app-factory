@@ -36,7 +36,6 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 3500));
     await tester.pumpAndSettle();
     await tester.tap(
       find.descendant(of: find.byType(GridView), matching: find.text('Rain')),

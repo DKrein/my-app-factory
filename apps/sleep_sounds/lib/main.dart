@@ -13,7 +13,6 @@ import 'features/player/player_controller.dart';
 import 'features/pro/pro_features.dart';
 import 'features/theme/theme_controller.dart';
 import 'features/reminders/bedtime_reminder.dart';
-import 'features/splash/splash_screen.dart';
 
 import 'package:factory_ui/factory_ui.dart';
 
@@ -165,16 +164,13 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
       title: AppConfig.name,
       debugShowCheckedModeBanner: false,
       theme: factoryDarkTheme(_palette),
-      home: AppSplashScreen(
+      home: LibraryPage(
+        playback: _playback,
+        mixes: _mixes,
+        themes: _themes,
         storage: _storage,
-        next: LibraryPage(
-          playback: _playback,
-          mixes: _mixes,
-          themes: _themes,
-          storage: _storage,
-          ads: _ads,
-          billing: _billing,
-        ),
+        ads: _ads,
+        billing: _billing,
       ),
     ),
   );
