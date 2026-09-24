@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:app_settings/app_settings.dart';
 import 'package:factory_ads/factory_ads.dart';
 import 'package:factory_billing/factory_billing.dart';
-import 'package:factory_core/factory_core.dart';
 import 'package:factory_storage/factory_storage.dart';
 import 'package:factory_ui/factory_ui.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +18,7 @@ import '../../content/sounds.dart';
 import '../common/starfield_background.dart';
 import 'equalizer_bars.dart';
 import '../player/player_controller.dart';
+import '../pro/paywall_page.dart';
 import '../pro/pro_features.dart';
 import '../player/duration_carousel.dart';
 import '../player/sleep_duration.dart';
@@ -85,37 +85,10 @@ class _LibraryPageState extends State<LibraryPage> {
 
   void _handlePurchaseEvent(PurchaseEvent event) {
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    switch (event.status) {
-      case PurchaseProgressStatus.purchased:
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Purchase complete! Ads removed.')),
-        );
-        break;
-      case PurchaseProgressStatus.restored:
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Purchases restored successfully!')),
-        );
-        break;
-      case PurchaseProgressStatus.pending:
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Processing purchase with Play Store...'),
-          ),
-        );
-        break;
-      case PurchaseProgressStatus.error:
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              'Error: ${event.errorMessage ?? "Transaction failed"}',
-            ),
-          ),
-        );
-        break;
-      case PurchaseProgressStatus.canceled:
-      case PurchaseProgressStatus.idle:
-        break;
+    if (event.status == PurchaseProgressStatus.purchased ||
+        event.status == PurchaseProgressStatus.restored) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Pro is on. Thank you!')));
     }
   }
 
@@ -539,14 +512,12 @@ class _SettingsSheetState extends State<SettingsSheet> {
   // A tighter line height keeps the glyphs of a two-line tile centered on
   // the same line as its icon and switch.
   static const _twoLineTileText = TextStyle(height: 1.2);
-  StoreProduct? _product;
   bool _reminderEnabled = false;
   TimeOfDay _reminderTime = BedtimeReminderService.defaultTime;
 
   @override
   void initState() {
     super.initState();
-    _loadProduct();
     _loadReminderState();
   }
 
@@ -649,16 +620,6 @@ class _SettingsSheetState extends State<SettingsSheet> {
     ),
   );
 
-  Future<void> _loadProduct() async {
-    final result = await widget.billing.queryProducts({AppConfig.proProductId});
-    if (!mounted) return;
-    setState(() {
-      if (result is Success<List<StoreProduct>> && result.value.isNotEmpty) {
-        _product = result.value.first;
-      }
-    });
-  }
-
   Future<void> _openAbout() async {
     final credits = await _credits;
     if (!mounted) return;
@@ -705,7 +666,6 @@ class _SettingsSheetState extends State<SettingsSheet> {
       listenable: pro.changes,
       builder: (context, _) {
         final isPremium = pro.isPro;
-        final product = _product;
 
         return StarfieldBackground(
           starOpacity: _settingsStarOpacity,
@@ -747,8 +707,10 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                 Icons.verified,
                                 color: FactoryColors.mist,
                               ),
-                              title: const Text('Premium Active'),
-                              subtitle: const Text('All ads are turned off.'),
+                              title: const Text('Sleepy Capy Pro'),
+                              subtitle: const Text(
+                                'Thank you for supporting Sleepy Capy.',
+                              ),
                               trailing: const Icon(
                                 Icons.check,
                                 color: FactoryColors.mist,
@@ -766,46 +728,42 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             ),
                             child: Column(
                               children: [
-                                Text(
-                                  'Make Sleepy Capy Ad-Free',
+                                const Text(
+                                  'Sleepy Capy Pro',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: FactoryColors.ink,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 16,
                                   ),
                                 ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Volume for each sound, saved mixes and more. '
+                                  'One purchase, no ads.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: FactoryColors.mutedInk,
+                                    fontSize: 13,
+                                  ),
+                                ),
                                 const SizedBox(height: 14),
                                 FilledButton(
-                                  onPressed: product == null
-                                      ? null
-                                      : () => billing.buyNonConsumable(product),
+                                  onPressed: () =>
+                                      PaywallPage.open(context, billing),
                                   style: FilledButton.styleFrom(
                                     backgroundColor: FactoryColors.mist,
                                     foregroundColor: FactoryColors.night,
-                                    disabledBackgroundColor: FactoryColors.mist
-                                        .withValues(alpha: .25),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 28,
                                       vertical: 12,
                                     ),
                                   ),
                                   child: const Text(
-                                    'REMOVE ADS',
+                                    'See Pro',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
-                                      letterSpacing: .5,
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  product == null
-                                      ? 'One-time purchase'
-                                      : 'One-time purchase · ${product.price}',
-                                  style: const TextStyle(
-                                    color: FactoryColors.mutedInk,
-                                    fontSize: 12,
                                   ),
                                 ),
                               ],

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:sleep_sounds/features/library/equalizer_bars.dart';
+import 'package:sleep_sounds/features/pro/paywall_page.dart';
 import 'package:sleep_sounds/features/pro/pro_features.dart';
 import 'package:sleep_sounds/main.dart';
 
@@ -303,14 +304,14 @@ void main() {
     });
   });
 
-  testWidgets('In-App Purchase removes ads immediately', (tester) async {
+  testWidgets('buying Pro from Settings removes ads and closes the paywall', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1080, 2200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final storage = MemoryKeyValueStore();
-    final ads = PreviewAdsGateway(initialized: true);
     final billing = FakeBillingGateway(
       catalog: sleepSoundsCatalog,
       initialProducts: [defaultProProduct],
@@ -318,37 +319,35 @@ void main() {
 
     await tester.pumpWidget(
       SleepSoundsApp(
-        storage: storage,
+        storage: MemoryKeyValueStore(),
         createGateway: createGateway,
-        ads: ads,
+        ads: PreviewAdsGateway(initialized: true),
         billing: billing,
       ),
     );
     await pumpPastSplash(tester);
 
+    expect(find.byType(PaywallPage), findsNothing);
     expect(find.text('Preview Ad [banner_home]'), findsOneWidget);
 
-    // Open settings
     await tester.tap(find.byIcon(Icons.tune_outlined));
     await tester.pumpAndSettle();
-
-    expect(find.text('Settings'), findsOneWidget);
-    expect(find.textContaining(r'$4.99'), findsOneWidget);
-
-    // Tap the REMOVE ADS button
-    await tester.tap(find.text('REMOVE ADS'));
+    await tester.tap(find.text('See Pro'));
     await tester.pumpAndSettle();
 
-    // Entitlement granted
+    expect(find.byType(PaywallPage), findsOneWidget);
+
+    await tester.tap(find.text('Get Pro'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PaywallPage), findsNothing);
     expect(billing.entitlements.has(ProFeatures.entitlement), isTrue);
-    expect(find.text('Premium Active'), findsOneWidget);
+    expect(find.text('Pro is on. Thank you!'), findsOneWidget);
+    expect(find.text('Thank you for supporting Sleepy Capy.'), findsOneWidget);
 
-    // Close settings modal by popping navigator
-    final nav = Navigator.of(tester.element(find.text('Settings')));
-    nav.pop();
+    Navigator.of(tester.element(find.text('Settings'))).pop();
     await tester.pumpAndSettle();
 
-    // Banner is no longer on the screen!
     expect(find.text('Preview Ad [banner_home]'), findsNothing);
   });
 
@@ -519,65 +518,6 @@ void main() {
 
       await tester.tap(find.text('Rain'));
       await tester.pump();
-    });
-  });
-
-  group('remove ads price', () {
-    Future<BillingGateway> openSettings(
-      WidgetTester tester,
-      List<StoreProduct> storeProducts,
-    ) async {
-      tester.view.physicalSize = const Size(1080, 2200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final billing = FakeBillingGateway(
-        catalog: sleepSoundsCatalog,
-        initialProducts: storeProducts,
-      );
-      await tester.pumpWidget(
-        SleepSoundsApp(
-          storage: MemoryKeyValueStore(),
-          createGateway: createGateway,
-          ads: PreviewAdsGateway(initialized: true),
-          billing: billing,
-        ),
-      );
-      await pumpPastSplash(tester);
-      await tester.tap(find.byIcon(Icons.tune_outlined));
-      await tester.pumpAndSettle();
-      return billing;
-    }
-
-    testWidgets('shows the price reported by the store', (tester) async {
-      await openSettings(tester, const [
-        StoreProduct(
-          id: 'sleep_sounds_pro',
-          title: 'Remove Ads',
-          description: 'No ads',
-          price: r'$3.99',
-        ),
-      ]);
-
-      expect(find.textContaining(r'$3.99'), findsOneWidget);
-      expect(find.textContaining(r'$4.99'), findsNothing);
-    });
-
-    testWidgets('disables the purchase when the store has no product', (
-      tester,
-    ) async {
-      final billing = await openSettings(tester, const []);
-
-      final button = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'REMOVE ADS'),
-      );
-      expect(button.onPressed, isNull);
-
-      await tester.tap(find.text('REMOVE ADS'));
-      await tester.pumpAndSettle();
-
-      expect(billing.entitlements.has(ProFeatures.entitlement), isFalse);
     });
   });
 }

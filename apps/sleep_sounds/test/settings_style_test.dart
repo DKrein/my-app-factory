@@ -44,7 +44,7 @@ void main() {
     final card = tester.widget<Container>(
       find
           .ancestor(
-            of: find.text('Make Sleepy Capy Ad-Free'),
+            of: find.text('Sleepy Capy Pro'),
             matching: find.byType(Container),
           )
           .first,
