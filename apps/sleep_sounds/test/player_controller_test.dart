@@ -23,7 +23,7 @@ void main() {
 
   final rain = sounds.firstWhere((s) => s.id == 'rain');
   final crickets = addons.firstWhere((a) => a.id == 'crickets');
-  final fire = addons.firstWhere((a) => a.id == 'fire');
+  final clock = addons.firstWhere((a) => a.id == 'clock');
 
   testWidgets('play/pause fans out to the main sound and every active addon',
       (tester) async {
@@ -76,7 +76,7 @@ void main() {
       (tester) async {
     await playback.play(rain);
     await playback.toggleAddon(crickets);
-    await playback.toggleAddon(fire);
+    await playback.toggleAddon(clock);
 
     expect(layers.length, equals(2));
     expect(layers.every((l) => l.playingAsset != null), isTrue);
@@ -120,7 +120,7 @@ void main() {
       (tester) async {
     await playback.play(rain);
     await playback.toggleAddon(crickets);
-    await playback.toggleAddon(fire);
+    await playback.toggleAddon(clock);
     playback.setTimer(1); // 60s
 
     await tester.pump(const Duration(seconds: 60));
@@ -150,7 +150,7 @@ void main() {
   testWidgets('dispose disposes every addon gateway', (tester) async {
     await playback.play(rain);
     await playback.toggleAddon(crickets);
-    await playback.toggleAddon(fire);
+    await playback.toggleAddon(clock);
 
     playback.dispose();
 
