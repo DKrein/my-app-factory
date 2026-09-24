@@ -5,6 +5,7 @@ import 'package:factory_storage/factory_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:sleep_sounds/features/library/equalizer_bars.dart';
 import 'package:sleep_sounds/main.dart';
 
 Future<void> pumpPastSplash(WidgetTester tester) async {
@@ -45,7 +46,20 @@ Iterable<String> get playingAssets =>
     gateways.map((g) => g.playingAsset).nonNulls;
 
 void main() {
-  setUp(() => gateways = []);
+  // The playing equalizer never settles; a real user with "remove
+  // animations" on gets the same static bars.
+  setUp(() {
+    gateways = [];
+    TestWidgetsFlutterBinding.ensureInitialized()
+        .platformDispatcher
+        .accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+      disableAnimations: true,
+    );
+  });
+  tearDown(
+    () => TestWidgetsFlutterBinding.instance.platformDispatcher
+        .clearAccessibilityFeaturesTestValue(),
+  );
 
   testWidgets('SleepSoundsApp renders catalog, title, and initial banner', (
     tester,
@@ -79,6 +93,10 @@ void main() {
     tester,
   ) async {
     final storage = MemoryKeyValueStore();
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await storage.writeString(
       'last_session_v1',
       '{"soundIds":["rain"],"timerMinutes":180}',
@@ -104,7 +122,7 @@ void main() {
     expect(playingAssets, hasLength(1));
     expect(find.textContaining('Stopping in 3h 00m'), findsOneWidget);
 
-    await tester.tap(find.text('Rain'));
+    await tester.tap(soundCard('Rain'));
     await tester.pump();
   });
 
@@ -349,6 +367,37 @@ void main() {
     );
     await pumpPastSplash(tester);
   }
+
+  testWidgets('only selected cards show the equalizer', (tester) async {
+    await pumpApp(tester);
+
+    expect(find.byType(EqualizerBars), findsNothing);
+
+    await tester.tap(soundCard('Rain'));
+    await tester.tap(soundCard('Waves'));
+    await tester.pump();
+
+    expect(find.byType(EqualizerBars), findsNWidgets(2));
+    expect(
+      tester.widget<EqualizerBars>(find.byType(EqualizerBars).first).playing,
+      isTrue,
+    );
+
+    await tester.tap(find.byTooltip('Pause'));
+    await tester.pump();
+
+    expect(
+      tester
+          .widgetList<EqualizerBars>(find.byType(EqualizerBars))
+          .map((b) => b.playing),
+      [false, false],
+    );
+
+    await tester.tap(soundCard('Rain'));
+    await tester.tap(soundCard('Waves'));
+    await tester.pump();
+    expect(find.byType(EqualizerBars), findsNothing);
+  });
 
   testWidgets('tapping sounds plays them together and each tap toggles one', (
     tester,

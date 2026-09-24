@@ -15,6 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app_config.g.dart';
 import '../../content/sounds.dart';
 import '../common/starfield_background.dart';
+import 'equalizer_bars.dart';
 import '../player/player_controller.dart';
 import '../player/duration_carousel.dart';
 import '../player/sleep_duration.dart';
@@ -376,9 +377,19 @@ class _LibraryPageState extends State<LibraryPage> {
         children: [
           SizedBox(
             height: _heartSlotHeight,
-            child: Align(
-              alignment: Alignment.topRight,
-              child: _heartSlot(sound, active: active),
+            child: Stack(
+              children: [
+                if (active)
+                  Positioned(
+                    left: 10,
+                    top: 10,
+                    child: EqualizerBars(playing: widget.playback.playing),
+                  ),
+                Align(
+                  alignment: Alignment.topRight,
+                  child: _heartSlot(sound, active: active),
+                ),
+              ],
             ),
           ),
           sound.icon.build(FactoryColors.mist, 34),
