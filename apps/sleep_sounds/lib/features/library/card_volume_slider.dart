@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../player/player_controller.dart';
+import '../../l10n/l10n.dart';
 
 /// Volume control at the bottom of an active card. Without Pro it shows the
 /// same track with a lock, and tapping it calls [onLockedTap].
@@ -32,7 +33,7 @@ class CardVolumeSlider extends StatelessWidget {
 
   Widget _lockedTrack(BuildContext context) => Semantics(
     button: true,
-    label: 'Volume, a Pro feature',
+    label: context.l10n.volumeLocked,
     child: GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onLockedTap,

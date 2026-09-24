@@ -23,6 +23,7 @@ class PlaybackController extends ChangeNotifier {
     this._nowPlaying,
     this._storage,
     this._now = DateTime.now,
+    this.soundLabel = _idAsLabel,
   });
 
   static const _sessionKey = 'last_session_v1';
@@ -41,6 +42,12 @@ class PlaybackController extends ChangeNotifier {
   final AudioGatewayFactory _createGateway;
   final NowPlayingNotifier? _nowPlaying;
   final KeyValueStore? _storage;
+
+  /// How a sound is named in the notification; the app supplies the
+  /// translation.
+  final String Function(Sound sound) soundLabel;
+
+  static String _idAsLabel(Sound sound) => sound.id;
   final DateTime Function() _now;
   final Map<String, ({Sound sound, AudioGateway gateway})> _active = {};
   Timer? _timer;
@@ -362,7 +369,7 @@ class PlaybackController extends ChangeNotifier {
     Duration fadeIn = _fadeInDuration,
   }) async {
     await layer.gateway.setVolume(0);
-    await layer.gateway.play(layer.sound.asset, title: layer.sound.name);
+    await layer.gateway.play(layer.sound.asset, title: soundLabel(layer.sound));
     unawaited(layer.gateway.fadeTo(_gainOf(layer.sound.id), fadeIn));
   }
 
@@ -428,7 +435,7 @@ class PlaybackController extends ChangeNotifier {
   void _showNowPlaying() {
     _nowPlaying?.showTrack(
       id: 'mix',
-      title: _active.values.map((a) => a.sound.name).join(', '),
+      title: _active.values.map((a) => soundLabel(a.sound)).join(', '),
     );
     _nowPlaying?.setPlaying(playing);
   }

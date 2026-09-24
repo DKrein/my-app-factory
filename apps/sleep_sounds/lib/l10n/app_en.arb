@@ -1,0 +1,255 @@
+{
+  "@@locale": "en",
+  "homeTitle": "Time to capy-nap",
+  "timerTitle": "Capy Timer",
+  "windDownTitle": "To wind down",
+  "tooltipSettings": "Settings",
+  "tooltipPause": "Pause",
+  "tooltipPlay": "Play",
+  "selectSoundToPlay": "Select a sound to play",
+  "proIsOn": "Pro is on. Thank you!",
+  "timerOptions": "Timer options",
+  "timerOptionsPro": "Timer options (Pro)",
+  "saveMix": "Save mix",
+  "saveMixPro": "Save mix (Pro)",
+  "statusPaused": "Paused",
+  "statusPlaying": "Playing",
+  "statusStoppingIn": "Stopping in {time}",
+  "@statusStoppingIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "statusStoppingAt": "Stopping at {clock} · in {time}",
+  "@statusStoppingAt": {
+    "placeholders": {
+      "clock": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "statusWithFade": "{status} · fades over the last {minutes} min",
+  "@statusWithFade": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "timerOff": "Off",
+  "volumeLocked": "Volume, a Pro feature",
+  "settingsTitle": "Settings",
+  "tooltipCloseSettings": "Close settings",
+  "proTitle": "Sleepy Capy Pro",
+  "proCardBody": "Volume for each sound, saved mixes and more. One purchase, no ads.",
+  "seePro": "See Pro",
+  "proThanks": "Thank you for supporting Sleepy Capy.",
+  "restorePurchase": "Restore Purchase",
+  "bedtimeReminder": "Bedtime Reminder",
+  "reminderDaily": "Daily at {time}",
+  "@reminderDaily": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderOff": "Off",
+  "reminderPickerHelp": "What time?",
+  "rateApp": "Rate Sleepy Capy",
+  "sendFeedback": "Send Feedback",
+  "playbackStops": "Playback stops unexpectedly?",
+  "aboutItem": "About",
+  "batteryTitle": "Battery optimization",
+  "batteryBody": "Android may stop background apps to save battery, which can interrupt playback during the night.\n\nTap Open settings, choose Battery and allow unrestricted battery usage for Sleepy Capy. The exact wording varies by device.",
+  "cancel": "Cancel",
+  "openSettings": "Open settings",
+  "close": "Close",
+  "aboutTitle": "About",
+  "aboutVersion": "Version",
+  "aboutPrivacyPolicy": "Privacy Policy",
+  "aboutContact": "Contact",
+  "aboutLicenses": "Open source licenses",
+  "aboutAudioCredits": "Audio credits",
+  "creditLine": "\"{title}\" by {author}",
+  "@creditLine": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "author": {
+        "type": "String"
+      }
+    }
+  },
+  "changesLine": "Changes: {changes}",
+  "@changesLine": {
+    "placeholders": {
+      "changes": {
+        "type": "String"
+      }
+    }
+  },
+  "creditChangesEdited": "Trimmed, looped and level-adjusted.",
+  "mixSaveTitle": "Save mix",
+  "mixRenameTitle": "Rename mix",
+  "mixSaveAction": "Save",
+  "mixRenameAction": "Rename",
+  "mixDeleteAction": "Delete",
+  "mixNameLabel": "Name",
+  "mixNameTaken": "That name is already used. Pick another.",
+  "mixIncludeTimer": "Include timer ({label})",
+  "@mixIncludeTimer": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "mixDeleteTitle": "Delete \"{name}\"?",
+  "@mixDeleteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "timerSheetTitle": "Timer options",
+  "fadeSection": "Fade out",
+  "fadeGradually": "Fade out gradually",
+  "fadeOnHint": "Volume lowers over the last {minutes} min.",
+  "@fadeOnHint": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "fadeOffHint": "Off: the sound fades in the last 4 s.",
+  "customDuration": "Custom duration",
+  "stopAtSection": "Stop at",
+  "setAction": "Set",
+  "inTime": "in {time}",
+  "@inTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "paywallSubtitle": "One purchase, yours to keep. No subscription.",
+  "paywallOwnedTitle": "You have Pro",
+  "paywallFeatureVolume": "Set the volume of each sound",
+  "paywallFeatureMixes": "Save as many mixes as you like",
+  "paywallFeatureTimer": "Fade out slowly, set any length, or stop at a time",
+  "paywallFeatureThemes": "More night themes",
+  "paywallFeatureNoAds": "No ads",
+  "paywallFreeNote": "All 17 sounds, mixing and the timer stay free.",
+  "paywallPrice": "{price} · one-time purchase",
+  "@paywallPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "getPro": "Get Pro",
+  "restorePurchases": "Restore purchases",
+  "tryAgain": "Try again",
+  "paywallStoreUnreachable": "Can't reach the store right now. Check your connection and try again.",
+  "paywallPending": "Waiting for your payment to go through. Pro turns on by itself when it does.",
+  "paywallPurchaseFailed": "The purchase didn't go through. Try again.",
+  "paywallRestoreFailed": "Couldn't check your purchases. Check your connection and try again.",
+  "paywallNothingToRestore": "No earlier Pro purchase was found on this Google account.",
+  "themeTitle": "Theme",
+  "themeProNote": "Extra themes are part of Sleepy Capy Pro.",
+  "themeProLabel": "{name}, a Pro theme",
+  "@themeProLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "audioChannelName": "Sound playback",
+  "reminderChannelName": "Bedtime reminder",
+  "reminderChannelDescription": "Daily reminder to wind down for sleep",
+  "reminderNotificationTitle": "It's Capytime!",
+  "reminderNotificationBody": "It's Capytime! Time to get cozy and sleepy.",
+  "soundRain": "Rain",
+  "@soundRain": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundRainTent": "Rain in tent",
+  "@soundRainTent": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundWaves": "Waves",
+  "@soundWaves": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundAirplane": "Airplane",
+  "@soundAirplane": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundRiver": "River",
+  "@soundRiver": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundForestRain": "Forest rain",
+  "@soundForestRain": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundCampfire": "Campfire",
+  "@soundCampfire": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundStream": "Stream",
+  "@soundStream": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundStorm": "Storm",
+  "@soundStorm": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundWinter": "Winter",
+  "@soundWinter": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundTrain": "Train",
+  "@soundTrain": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundCatPurring": "Cat purring",
+  "@soundCatPurring": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundBirds": "Birds",
+  "@soundBirds": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundCrickets": "Crickets",
+  "@soundCrickets": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundWind": "Wind",
+  "@soundWind": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundChimes": "Chimes",
+  "@soundChimes": {
+    "description": "Name of a sound in the catalog"
+  },
+  "soundClock": "Clock",
+  "@soundClock": {
+    "description": "Name of a sound in the catalog"
+  }
+}

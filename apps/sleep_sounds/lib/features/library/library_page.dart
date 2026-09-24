@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_config.g.dart';
 import '../../content/credits.dart';
+import '../../l10n/l10n.dart';
 import '../../content/sounds.dart';
 import '../common/starfield_background.dart';
 import 'card_volume_slider.dart';
@@ -78,7 +79,7 @@ class _LibraryPageState extends State<LibraryPage> {
     if (event.status == PurchaseProgressStatus.purchased ||
         event.status == PurchaseProgressStatus.restored) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Pro is on. Thank you!')));
+          .showSnackBar(SnackBar(content: Text(context.l10n.proIsOn)));
     }
   }
 
@@ -112,14 +113,14 @@ class _LibraryPageState extends State<LibraryPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Time to capy-nap',
+                                context.l10n.homeTitle,
                                 style: Theme.of(context).textTheme.displaySmall,
                               ),
                             ),
                             IconButton(
                               onPressed: _openSettings,
                               icon: const Icon(Icons.tune_outlined),
-                              tooltip: 'Settings',
+                              tooltip: context.l10n.tooltipSettings,
                             ),
                           ],
                         ),
@@ -131,7 +132,7 @@ class _LibraryPageState extends State<LibraryPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Capy Timer',
+                                context.l10n.timerTitle,
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                             ),
@@ -172,7 +173,7 @@ class _LibraryPageState extends State<LibraryPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                'To wind down',
+                                context.l10n.windDownTitle,
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                             ),
@@ -233,9 +234,11 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
-  String _clock(TimeOfDay time) =>
-      MaterialLocalizations.of(context)
-          .formatTimeOfDay(time, alwaysUse24HourFormat: false);
+  String _clock(TimeOfDay time) => MaterialLocalizations.of(context)
+      .formatTimeOfDay(
+        time,
+        alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+      );
 
   Widget _durationCarousel() {
     final playback = widget.playback;
@@ -255,14 +258,15 @@ class _LibraryPageState extends State<LibraryPage> {
   String _timerStatus() {
     final playback = widget.playback;
     final stopAt = playback.stopAtTime;
-    if (!playback.playing) return 'Paused';
-    if (playback.timerMinutes == 0 && stopAt == null) return 'Playing';
+    final l10n = context.l10n;
+    if (!playback.playing) return l10n.statusPaused;
+    if (playback.timerMinutes == 0 && stopAt == null) return l10n.statusPlaying;
     final remaining = formatSleepRemaining(playback.remainingSeconds);
     final status = stopAt == null
-        ? 'Stopping in $remaining'
-        : 'Stopping at ${_clock(stopAt)} · in $remaining';
+        ? l10n.statusStoppingIn(remaining)
+        : l10n.statusStoppingAt(_clock(stopAt), remaining);
     final fade = playback.gradualFadeMinutes;
-    return fade == null ? status : '$status · fades over the last $fade min';
+    return fade == null ? status : l10n.statusWithFade(status, fade);
   }
 
   Widget _timerOptionsButton() {
@@ -272,7 +276,9 @@ class _LibraryPageState extends State<LibraryPage> {
       builder: (context, _) {
         final locked = !pro.canUseAdvancedTimer;
         return IconButton(
-          tooltip: locked ? 'Timer options (Pro)' : 'Timer options',
+          tooltip: locked
+              ? context.l10n.timerOptionsPro
+              : context.l10n.timerOptions,
           onPressed: locked
               ? () => PaywallPage.open(context, widget.billing)
               : () => showTimerOptions(context, widget.playback),
@@ -313,7 +319,7 @@ class _LibraryPageState extends State<LibraryPage> {
       final locked = !pro.canSaveMix(widget.mixes.mixes.length);
       final enabled = widget.playback.hasSounds;
       return IconButton(
-        tooltip: locked ? 'Save mix (Pro)' : 'Save mix',
+        tooltip: locked ? context.l10n.saveMixPro : context.l10n.saveMix,
         onPressed: !enabled
             ? null
             : locked
@@ -364,11 +370,13 @@ class _LibraryPageState extends State<LibraryPage> {
             onPressed: playback.hasSounds
                 ? playback.togglePlaying
                 : () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Select a sound to play')),
+                    SnackBar(content: Text(context.l10n.selectSoundToPlay)),
                   ),
             color: context.palette.night,
             icon: Icon(playback.playing ? Icons.pause : Icons.play_arrow),
-            tooltip: playback.playing ? 'Pause' : 'Play',
+            tooltip: playback.playing
+                ? context.l10n.tooltipPause
+                : context.l10n.tooltipPlay,
           ),
         ),
       );
@@ -448,7 +456,7 @@ class _LibraryPageState extends State<LibraryPage> {
           ),
           sound.icon.build(context.palette.mist, 34),
           const Spacer(),
-          _cardLabel(sound.name),
+          _cardLabel(soundName(context.l10n, sound)),
           SizedBox(
             height: CardVolumeSlider.height + 4,
             child: active ? _volumeSlider(sound) : null,
@@ -498,19 +506,30 @@ class SettingsSheet extends StatefulWidget {
 
 class _SettingsSheetState extends State<SettingsSheet> {
   static const _settingsStarOpacity = .2;
-  static final _aboutLabels = AboutLabels(
-    title: 'About',
-    version: 'Version',
-    privacyPolicy: 'Privacy Policy',
-    contact: 'Contact',
-    openSourceLicenses: 'Open source licenses',
-    audioCredits: 'Audio credits',
-    creditLine: (title, author) => '"$title" by $author',
-    changesLine: (changes) => 'Changes: $changes',
-  );
-  late final Future<List<CreditEntry>> _credits = rootBundle
-      .loadString('assets/credits.json')
-      .then(parseCredits);
+  AboutLabels get _aboutLabels {
+    final l10n = context.l10n;
+    return AboutLabels(
+      title: l10n.aboutTitle,
+      version: l10n.aboutVersion,
+      privacyPolicy: l10n.aboutPrivacyPolicy,
+      contact: l10n.aboutContact,
+      openSourceLicenses: l10n.aboutLicenses,
+      audioCredits: l10n.aboutAudioCredits,
+      creditLine: l10n.creditLine,
+      changesLine: l10n.changesLine,
+    );
+  }
+
+  Future<List<CreditEntry>> _loadCredits() async {
+    final l10n = context.l10n;
+    final json = await rootBundle.loadString('assets/credits.json');
+    return parseCredits(
+      json,
+      soundLabel: (sound) => soundName(l10n, sound),
+      changesText: l10n.creditChangesEdited,
+    );
+  }
+
   // A tighter line height keeps the glyphs of a two-line tile centered on
   // the same line as its icon and switch.
   static const _twoLineTileText = TextStyle(height: 1.2);
@@ -535,11 +554,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
   Future<TimeOfDay?> _pickTime() => showTimePicker(
     context: context,
     initialTime: _reminderTime,
-    helpText: 'What time?',
-    builder: (context, child) => MediaQuery(
-      data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
-      child: child!,
-    ),
+    helpText: context.l10n.reminderPickerHelp,
   );
 
   Future<void> _onReminderToggled(bool value) async {
@@ -599,31 +614,26 @@ class _SettingsSheetState extends State<SettingsSheet> {
     context: context,
     builder: (dialogContext) => AlertDialog(
       backgroundColor: context.palette.surfaceElevated,
-      title: const Text('Battery optimization'),
-      content: const Text(
-        'Android may stop background apps to save battery, which can '
-        'interrupt playback during the night.\n\n'
-        'Tap Open settings, choose Battery and allow unrestricted battery '
-        'usage for Sleepy Capy. The exact wording varies by device.',
-      ),
+      title: Text(context.l10n.batteryTitle),
+      content: Text(context.l10n.batteryBody),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: () {
             Navigator.of(dialogContext).pop();
             _openBatterySettings();
           },
-          child: const Text('Open settings'),
+          child: Text(context.l10n.openSettings),
         ),
       ],
     ),
   );
 
   Future<void> _openAbout() async {
-    final credits = await _credits;
+    final credits = await _loadCredits();
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -682,11 +692,11 @@ class _SettingsSheetState extends State<SettingsSheet> {
                         Icons.keyboard_arrow_down_rounded,
                         size: 32,
                       ),
-                      tooltip: 'Close settings',
+                      tooltip: context.l10n.tooltipCloseSettings,
                     ),
                     Expanded(
                       child: Text(
-                        'Settings',
+                        context.l10n.settingsTitle,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
@@ -709,10 +719,8 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                 Icons.verified,
                                 color: context.palette.mist,
                               ),
-                              title: const Text('Sleepy Capy Pro'),
-                              subtitle: const Text(
-                                'Thank you for supporting Sleepy Capy.',
-                              ),
+                              title: Text(context.l10n.proTitle),
+                              subtitle: Text(context.l10n.proThanks),
                               trailing: Icon(
                                 Icons.check,
                                 color: context.palette.mist,
@@ -733,7 +741,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             child: Column(
                               children: [
                                 Text(
-                                  'Sleepy Capy Pro',
+                                  context.l10n.proTitle,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: context.palette.ink,
@@ -743,8 +751,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'Volume for each sound, saved mixes and more. '
-                                  'One purchase, no ads.',
+                                  context.l10n.proCardBody,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: context.palette.mutedInk,
@@ -763,8 +770,8 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                       vertical: 12,
                                     ),
                                   ),
-                                  child: const Text(
-                                    'See Pro',
+                                  child: Text(
+                                    context.l10n.seePro,
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -785,7 +792,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             Icons.restore,
                             color: context.palette.mutedInk,
                           ),
-                          title: const Text('Restore Purchase'),
+                          title: Text(context.l10n.restorePurchase),
                           onTap: () async {
                             Navigator.of(context).pop();
                             await billing.restorePurchases();
@@ -797,14 +804,24 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             Icons.bedtime_outlined,
                             color: context.palette.mutedInk,
                           ),
-                          title: const Text(
-                            'Bedtime Reminder',
+                          title: Text(
+                            context.l10n.bedtimeReminder,
                             style: _twoLineTileText,
                           ),
                           subtitle: Text(
                             _reminderEnabled
-                                ? 'Daily at ${MaterialLocalizations.of(context).formatTimeOfDay(_reminderTime, alwaysUse24HourFormat: false)}'
-                                : 'Off',
+                                ? context.l10n.reminderDaily(
+                                    MaterialLocalizations.of(
+                                      context,
+                                    ).formatTimeOfDay(
+                                      _reminderTime,
+                                      alwaysUse24HourFormat:
+                                          MediaQuery.alwaysUse24HourFormatOf(
+                                            context,
+                                          ),
+                                    ),
+                                  )
+                                : context.l10n.reminderOff,
                             style: _twoLineTileText,
                           ),
                           onTap: _reminderEnabled ? _changeReminderTime : null,
@@ -818,7 +835,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             Icons.star_outline,
                             color: context.palette.mutedInk,
                           ),
-                          title: const Text('Rate Sleepy Capy'),
+                          title: Text(context.l10n.rateApp),
                           onTap: _rateUs,
                         ),
                         ListTile(
@@ -826,7 +843,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             Icons.mail_outline,
                             color: context.palette.mutedInk,
                           ),
-                          title: const Text('Send Feedback'),
+                          title: Text(context.l10n.sendFeedback),
                           onTap: _sendFeedback,
                         ),
                         const Divider(),
@@ -835,7 +852,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             Icons.battery_alert_outlined,
                             color: context.palette.mutedInk,
                           ),
-                          title: const Text('Playback stops unexpectedly?'),
+                          title: Text(context.l10n.playbackStops),
                           onTap: _showBatteryOptimizationDialog,
                         ),
                         ListTile(
@@ -843,7 +860,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                             Icons.info_outline,
                             color: context.palette.mutedInk,
                           ),
-                          title: const Text('About'),
+                          title: Text(context.l10n.aboutItem),
                           onTap: _openAbout,
                         ),
                       ],

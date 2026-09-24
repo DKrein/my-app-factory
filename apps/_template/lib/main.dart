@@ -3,6 +3,7 @@ import 'package:factory_ui/factory_ui.dart';
 import 'package:flutter/material.dart';
 
 import 'app_config.g.dart';
+import 'l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,8 @@ class TemplateApp extends StatelessWidget {
     return MaterialApp(
       title: AppConfig.name,
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: factoryDarkTheme(),
       home: HomePage(storage: storage ?? MemoryKeyValueStore()),
     );
@@ -73,7 +76,7 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
-            tooltip: 'Sobre o App',
+            tooltip: AppLocalizations.of(context).aboutTooltip,
             onPressed: () => _showAbout(context),
           ),
         ],
@@ -85,12 +88,12 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Bem-vindo!',
+                AppLocalizations.of(context).welcome,
                 style: Theme.of(context).textTheme.displaySmall,
               ),
               const SizedBox(height: FactorySpacing.sm),
               Text(
-                'Este é o ponto de partida para o seu novo aplicativo na App Factory.',
+                AppLocalizations.of(context).welcomeBody,
                 style: TextStyle(color: context.palette.mutedInk),
               ),
               const SizedBox(height: FactorySpacing.xl),
@@ -105,7 +108,7 @@ class _HomePageState extends State<HomePage> {
                           Icon(Icons.storage, color: context.palette.mist),
                           const SizedBox(width: FactorySpacing.md),
                           Text(
-                            'Persistência Local Ativa',
+                            AppLocalizations.of(context).persistenceActive,
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                         ],
@@ -113,15 +116,18 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: FactorySpacing.md),
                       Text(
                         _loaded
-                            ? 'Ações realizadas e salvas no KeyValueStore: $_counter'
-                            : 'Carregando estado...',
+                            ? AppLocalizations.of(context)
+                                  .actionsSaved(_counter)
+                            : AppLocalizations.of(context).loadingState,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: FactorySpacing.lg),
                       FilledButton.icon(
                         onPressed: _increment,
                         icon: const Icon(Icons.add),
-                        label: const Text('Incrementar Ação'),
+                        label: Text(
+                          AppLocalizations.of(context).incrementAction,
+                        ),
                       ),
                     ],
                   ),
@@ -159,13 +165,15 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Sobre este Aplicativo',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                AppLocalizations.of(context).aboutTitle,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              SizedBox(height: FactorySpacing.md),
+              const SizedBox(height: FactorySpacing.md),
               Text(
-                'Construído com Flutter sobre a base reutilizável da App Factory. '
-                'Totalmente offline-first, sem dependências ocultas de rede.',
+                AppLocalizations.of(context).aboutBody,
                 style: TextStyle(color: context.palette.mutedInk),
               ),
             ],

@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../pro/pro_features.dart';
 import 'theme_controller.dart';
+import '../../l10n/l10n.dart';
 
 /// The theme card in Settings: one swatch per palette. A palette that needs
 /// Pro shows a lock and, tapped without Pro, calls [onLockedTap].
@@ -40,7 +41,7 @@ class ThemePicker extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Theme',
+                    context.l10n.themeTitle,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -62,7 +63,7 @@ class ThemePicker extends StatelessWidget {
             if (!pro.isPro) ...[
               const SizedBox(height: 12),
               Text(
-                'Extra themes are part of Sleepy Capy Pro.',
+                context.l10n.themeProNote,
                 style: TextStyle(color: palette.mutedInk, fontSize: 12),
               ),
             ],
@@ -79,7 +80,7 @@ class ThemePicker extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: locked ? '${option.name}, a Pro theme' : option.name,
+      label: locked ? context.l10n.themeProLabel(option.name) : option.name,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: locked ? onLockedTap : () => themes.select(option),

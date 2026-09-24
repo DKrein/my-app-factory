@@ -2,6 +2,7 @@ import 'package:factory_ui/factory_ui.dart';
 import 'package:flutter/material.dart';
 
 import 'sleep_duration.dart';
+import '../../l10n/l10n.dart';
 
 /// Horizontal snapping picker for the sleep timer duration, e.g.
 /// `30m  [1h]  3h  6h`. Tapping an item snaps it to the center and commits
@@ -116,7 +117,9 @@ class _DurationCarouselState extends State<DurationCarousel> {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                widget.durations[index].label,
+                widget.durations[index].minutes == 0
+                    ? context.l10n.timerOff
+                    : widget.durations[index].label,
                 style: TextStyle(
                   color: color,
                   fontSize: fontSize,

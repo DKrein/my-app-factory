@@ -1,0 +1,19 @@
+{
+  "@@locale": "en",
+  "aboutTooltip": "About the app",
+  "welcome": "Welcome!",
+  "welcomeBody": "This is the starting point for your new App Factory app.",
+  "persistenceActive": "Local persistence is on",
+  "actionsSaved": "Actions saved in the KeyValueStore: {count}",
+  "@actionsSaved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "loadingState": "Loading state...",
+  "incrementAction": "Add action",
+  "aboutTitle": "About this app",
+  "aboutBody": "Built with Flutter on the reusable App Factory base. Fully offline-first, with no hidden network dependencies."
+}

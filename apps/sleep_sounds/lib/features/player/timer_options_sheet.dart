@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'player_controller.dart';
 import 'sleep_duration.dart';
+import '../../l10n/l10n.dart';
 
 Future<void> showTimerOptions(
   BuildContext context,
@@ -50,9 +51,11 @@ class _TimerOptionsSheetState extends State<TimerOptionsSheet> {
     _stopAt = _playback.stopAtTime ?? _defaultStopAt;
   }
 
-  String _clock(TimeOfDay time) =>
-      MaterialLocalizations.of(context)
-          .formatTimeOfDay(time, alwaysUse24HourFormat: false);
+  String _clock(TimeOfDay time) => MaterialLocalizations.of(context)
+      .formatTimeOfDay(
+        time,
+        alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+      );
 
   Future<void> _pickStopAt() async {
     final picked = await showTimePicker(context: context, initialTime: _stopAt);
@@ -109,30 +112,29 @@ class _TimerOptionsSheetState extends State<TimerOptionsSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Timer options',
+                      context.l10n.timerSheetTitle,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Close',
+                    tooltip: context.l10n.close,
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
               _section(
-                'Fade out',
+                context.l10n.fadeSection,
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Fade out gradually'),
+                      title: Text(context.l10n.fadeGradually),
                       subtitle: Text(
                         _playback.gradualFade
-                            ? 'Volume lowers over the last '
-                                  '${_playback.fadeMinutes} min.'
-                            : 'Off: the sound fades in the last 4 s.',
+                            ? context.l10n.fadeOnHint(_playback.fadeMinutes)
+                            : context.l10n.fadeOffHint,
                       ),
                       value: _playback.gradualFade,
                       onChanged: _playback.setGradualFade,
@@ -163,7 +165,7 @@ class _TimerOptionsSheetState extends State<TimerOptionsSheet> {
               ),
               const Divider(indent: 0, endIndent: 0),
               _section(
-                'Custom duration',
+                context.l10n.customDuration,
                 Row(
                   spacing: 12,
                   children: [
@@ -191,14 +193,14 @@ class _TimerOptionsSheetState extends State<TimerOptionsSheet> {
                               _playback.setCustomTimer(totalMinutes);
                               Navigator.of(context).pop();
                             },
-                      child: const Text('Set'),
+                      child: Text(context.l10n.setAction),
                     ),
                   ],
                 ),
               ),
               const Divider(indent: 0, endIndent: 0),
               _section(
-                'Stop at',
+                context.l10n.stopAtSection,
                 Row(
                   spacing: 12,
                   children: [
@@ -208,7 +210,11 @@ class _TimerOptionsSheetState extends State<TimerOptionsSheet> {
                     ),
                     Expanded(
                       child: Text(
-                        'in ${formatSleepRemaining(_playback.secondsUntilNext(_stopAt))}',
+                        context.l10n.inTime(
+                          formatSleepRemaining(
+                            _playback.secondsUntilNext(_stopAt),
+                          ),
+                        ),
                         style: TextStyle(color: context.palette.mutedInk),
                       ),
                     ),
@@ -218,7 +224,7 @@ class _TimerOptionsSheetState extends State<TimerOptionsSheet> {
                         _playback.setStopAt(_stopAt);
                         Navigator.of(context).pop();
                       },
-                      child: const Text('Set'),
+                      child: Text(context.l10n.setAction),
                     ),
                   ],
                 ),

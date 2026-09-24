@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_config.g.dart';
 import 'pro_features.dart';
+import '../../l10n/l10n.dart';
 
 enum _Load { loading, ready, failed }
 
@@ -35,16 +36,16 @@ class PaywallPage extends StatefulWidget {
 
 class _PaywallPageState extends State<PaywallPage> {
   static const _restoreWait = Duration(seconds: 2);
-  static const _features = [
-    (Symbols.volume_up_rounded, 'Set the volume of each sound'),
-    (Symbols.queue_music_rounded, 'Save as many mixes as you like'),
-    (
-      Symbols.timer_rounded,
-      'Fade out slowly, set any length, or stop at a time',
-    ),
-    (Symbols.palette_rounded, 'More night themes'),
-    (Symbols.ad_off_rounded, 'No ads'),
-  ];
+  List<(IconData, String)> get _features {
+    final l10n = context.l10n;
+    return [
+      (Symbols.volume_up_rounded, l10n.paywallFeatureVolume),
+      (Symbols.queue_music_rounded, l10n.paywallFeatureMixes),
+      (Symbols.timer_rounded, l10n.paywallFeatureTimer),
+      (Symbols.palette_rounded, l10n.paywallFeatureThemes),
+      (Symbols.ad_off_rounded, l10n.paywallFeatureNoAds),
+    ];
+  }
 
   late final ProFeatures _pro = ProFeatures(widget.billing.entitlements);
   StreamSubscription<PurchaseEvent>? _events;
@@ -125,12 +126,10 @@ class _PaywallPageState extends State<PaywallPage> {
   }
 
   String? get _noticeText => switch (_notice) {
-    _Notice.pending => 'Waiting for your payment to go through. Pro turns on by itself when it does.',
-    _Notice.purchaseFailed => "The purchase didn't go through. Try again.",
-    _Notice.restoreFailed =>
-      "Couldn't check your purchases. Check your connection and try again.",
-    _Notice.nothingToRestore =>
-      'No earlier Pro purchase was found on this Google account.',
+    _Notice.pending => context.l10n.paywallPending,
+    _Notice.purchaseFailed => context.l10n.paywallPurchaseFailed,
+    _Notice.restoreFailed => context.l10n.paywallRestoreFailed,
+    _Notice.nothingToRestore => context.l10n.paywallNothingToRestore,
     null => null,
   };
 
@@ -144,7 +143,7 @@ class _PaywallPageState extends State<PaywallPage> {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Symbols.close_rounded),
-          tooltip: 'Close',
+          tooltip: context.l10n.close,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
       ),
@@ -152,14 +151,12 @@ class _PaywallPageState extends State<PaywallPage> {
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
         children: [
           Text(
-            _pro.isPro ? 'You have Pro' : 'Sleepy Capy Pro',
+            _pro.isPro ? context.l10n.paywallOwnedTitle : context.l10n.proTitle,
             style: Theme.of(context).textTheme.displaySmall,
           ),
           const SizedBox(height: 8),
           Text(
-            _pro.isPro
-                ? 'Thank you for supporting Sleepy Capy.'
-                : 'One purchase, yours to keep. No subscription.',
+            _pro.isPro ? context.l10n.proThanks : context.l10n.paywallSubtitle,
             style: TextStyle(color: context.palette.mutedInk, fontSize: 16),
           ),
           const SizedBox(height: 24),
@@ -176,7 +173,7 @@ class _PaywallPageState extends State<PaywallPage> {
             ),
           const SizedBox(height: 16),
           Text(
-            'All 17 sounds, mixing and the timer stay free.',
+            context.l10n.paywallFreeNote,
             style: TextStyle(color: context.palette.mutedInk),
           ),
           const SizedBox(height: 32),
@@ -185,7 +182,7 @@ class _PaywallPageState extends State<PaywallPage> {
           Center(
             child: TextButton(
               onPressed: () => launchUrl(Uri.parse(AppConfig.privacyPolicyUrl)),
-              child: const Text('Privacy Policy'),
+              child: Text(context.l10n.aboutPrivacyPolicy),
             ),
           ),
         ],
@@ -201,14 +198,17 @@ class _PaywallPageState extends State<PaywallPage> {
         const Center(child: CircularProgressIndicator())
       else if (_load == _Load.failed) ...[
         Text(
-          "Can't reach the store right now. Check your connection and try again.",
+          context.l10n.paywallStoreUnreachable,
           style: TextStyle(color: context.palette.mutedInk),
         ),
         const SizedBox(height: 12),
-        OutlinedButton(onPressed: _loadProduct, child: const Text('Try again')),
+        OutlinedButton(
+          onPressed: _loadProduct,
+          child: Text(context.l10n.tryAgain),
+        ),
       ] else if (product != null) ...[
         Text(
-          '${product.price} · one-time purchase',
+          context.l10n.paywallPrice(product.price),
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleMedium,
         ),
@@ -223,8 +223,8 @@ class _PaywallPageState extends State<PaywallPage> {
             ),
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
-          child: const Text(
-            'Get Pro',
+          child: Text(
+            context.l10n.getPro,
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
           ),
         ),
@@ -237,7 +237,7 @@ class _PaywallPageState extends State<PaywallPage> {
       Center(
         child: TextButton(
           onPressed: _restore,
-          child: const Text('Restore purchases'),
+          child: Text(context.l10n.restorePurchases),
         ),
       ),
     ];

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sleep_sounds/features/common/starfield_background.dart';
 import 'package:sleep_sounds/features/library/library_page.dart';
 import 'package:sleep_sounds/features/theme/theme_controller.dart';
+import 'package:sleep_sounds/l10n/l10n.dart';
 import 'package:sleep_sounds/main.dart';
 
 Future<void> pumpSettings(WidgetTester tester) async {
@@ -15,6 +16,8 @@ Future<void> pumpSettings(WidgetTester tester) async {
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: factoryDarkTheme(),
       home: Scaffold(
         body: SettingsSheet(

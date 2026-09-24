@@ -1,0 +1,12 @@
+{
+  "@@locale": "pt",
+  "aboutTooltip": "Sobre o app",
+  "welcome": "Bem-vindo!",
+  "welcomeBody": "Este é o ponto de partida para o seu novo aplicativo na App Factory.",
+  "persistenceActive": "Persistência local ativa",
+  "actionsSaved": "Ações realizadas e salvas no KeyValueStore: {count}",
+  "loadingState": "Carregando estado...",
+  "incrementAction": "Incrementar ação",
+  "aboutTitle": "Sobre este aplicativo",
+  "aboutBody": "Construído com Flutter sobre a base reutilizável da App Factory. Totalmente offline-first, sem dependências ocultas de rede."
+}

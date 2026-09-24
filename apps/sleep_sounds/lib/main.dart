@@ -16,6 +16,8 @@ import 'features/reminders/bedtime_reminder.dart';
 
 import 'package:factory_ui/factory_ui.dart';
 
+import 'l10n/l10n.dart';
+
 const sleepSoundsCatalog = BillingCatalog(
   products: [
     BillingProduct(
@@ -39,7 +41,7 @@ void main() async {
 
   final nowPlaying = await AudioServiceNotifier.init(
     channelId: '${AppConfig.applicationId}.audio',
-    channelName: 'Sound playback',
+    channelName: deviceL10n().audioChannelName,
     notificationIcon: 'drawable/ic_launcher_monochrome',
   );
   final storage = await SharedPreferencesStore.create();
@@ -104,6 +106,7 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
               JustAudioGateway(ownsAudioSession: ownsAudioSession),
       nowPlaying: widget.nowPlaying,
       storage: _storage,
+      soundLabel: (sound) => soundName(deviceL10n(), sound),
     );
     unawaited(_playback.restore());
     _mixes = MixLibrary(_storage);
@@ -163,6 +166,8 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
     builder: (context, _) => MaterialApp(
       title: AppConfig.name,
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: factoryDarkTheme(_palette),
       home: LibraryPage(
         playback: _playback,

@@ -6,6 +6,7 @@ import '../player/player_controller.dart';
 import '../player/sleep_duration.dart';
 import 'mix_library.dart';
 import 'saved_mix.dart';
+import '../../l10n/l10n.dart';
 
 /// Asks for a name and saves the mix that is playing.
 Future<void> showSaveMixDialog(
@@ -24,8 +25,8 @@ Future<void> showRenameMixDialog(
 }) => showDialog<void>(
   context: context,
   builder: (_) => _NameDialog(
-    title: 'Rename mix',
-    action: 'Rename',
+    title: context.l10n.mixRenameTitle,
+    action: context.l10n.mixRenameAction,
     initialName: mix.name,
     isTaken: (name) => library.isNameTaken(name, except: mix.name),
     onSubmit: (name) => library.rename(mix.name, name),
@@ -49,7 +50,7 @@ Future<void> showMixMenu(
         ),
         ListTile(
           leading: const Icon(Icons.edit_outlined),
-          title: const Text('Rename'),
+          title: Text(context.l10n.mixRenameAction),
           onTap: () {
             Navigator.of(sheetContext).pop();
             showRenameMixDialog(context, library: library, mix: mix);
@@ -57,7 +58,7 @@ Future<void> showMixMenu(
         ),
         ListTile(
           leading: const Icon(Icons.delete_outline),
-          title: const Text('Delete'),
+          title: Text(context.l10n.mixDeleteAction),
           onTap: () {
             Navigator.of(sheetContext).pop();
             _confirmDelete(context, library: library, mix: mix);
@@ -76,18 +77,18 @@ Future<void> _confirmDelete(
   context: context,
   builder: (dialogContext) => AlertDialog(
     backgroundColor: context.palette.surfaceElevated,
-    title: Text('Delete "${mix.name}"?'),
+    title: Text(context.l10n.mixDeleteTitle(mix.name)),
     actions: [
       TextButton(
         onPressed: () => Navigator.of(dialogContext).pop(),
-        child: const Text('Cancel'),
+        child: Text(context.l10n.cancel),
       ),
       FilledButton(
         onPressed: () {
           library.delete(mix.name);
           Navigator.of(dialogContext).pop();
         },
-        child: const Text('Delete'),
+        child: Text(context.l10n.mixDeleteAction),
       ),
     ],
   ),
@@ -106,9 +107,10 @@ class _SaveMixDialog extends StatefulWidget {
 class _SaveMixDialogState extends State<_SaveMixDialog> {
   bool _includeTimer = true;
 
-  String get _timerLabel => sleepDurations
-      .firstWhere((d) => d.minutes == widget.playback.timerMinutes)
-      .label;
+  String get _timerLabel {
+    final minutes = widget.playback.timerMinutes;
+    return minutes == 0 ? context.l10n.timerOff : customDurationLabel(minutes);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,8 +119,8 @@ class _SaveMixDialogState extends State<_SaveMixDialog> {
         if (widget.playback.isSelected(sound)) sound,
     ];
     return _NameDialog(
-      title: 'Save mix',
-      action: 'Save',
+      title: context.l10n.mixSaveTitle,
+      action: context.l10n.mixSaveAction,
       initialName: widget.library.defaultName(),
       isTaken: widget.library.isNameTaken,
       onSubmit: (name) => widget.library.save(
@@ -153,7 +155,7 @@ class _SaveMixDialogState extends State<_SaveMixDialog> {
             controlAffinity: ListTileControlAffinity.leading,
             value: _includeTimer,
             onChanged: (value) => setState(() => _includeTimer = value ?? true),
-            title: Text('Include timer ($_timerLabel)'),
+            title: Text(context.l10n.mixIncludeTimer(_timerLabel)),
           ),
         ],
       ),
@@ -222,11 +224,9 @@ class _NameDialogState extends State<_NameDialog> {
             onChanged: (_) => setState(() {}),
             onSubmitted: (_) => _submit(),
             decoration: InputDecoration(
-              labelText: 'Name',
+              labelText: context.l10n.mixNameLabel,
               counterText: '',
-              errorText: _taken
-                  ? 'That name is already used. Pick another.'
-                  : null,
+              errorText: _taken ? context.l10n.mixNameTaken : null,
             ),
           ),
           ?widget.extra,
@@ -236,7 +236,7 @@ class _NameDialogState extends State<_NameDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancel'),
+        child: Text(context.l10n.cancel),
       ),
       FilledButton(
         onPressed: _empty || _taken ? null : _submit,

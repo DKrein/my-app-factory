@@ -1,19 +1,26 @@
 import 'dart:io';
 
 import 'package:factory_ui/factory_ui.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sleep_sounds/content/credits.dart';
 import 'package:sleep_sounds/content/sounds.dart';
+import 'package:sleep_sounds/l10n/l10n.dart';
 
 import 'settings_style_test.dart' show pumpSettings;
 
 void main() {
-  final credits = parseCredits(File('assets/credits.json').readAsStringSync());
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  final credits = parseCredits(
+    File('assets/credits.json').readAsStringSync(),
+    soundLabel: (sound) => soundName(l10n, sound),
+    changesText: l10n.creditChangesEdited,
+  );
 
   test('every sound has exactly one credit, titled like the sound', () {
     expect(
       credits.map((c) => c.title),
-      unorderedEquals(sounds.map((s) => s.name)),
+      unorderedEquals(sounds.map((s) => soundName(l10n, s))),
     );
   });
 

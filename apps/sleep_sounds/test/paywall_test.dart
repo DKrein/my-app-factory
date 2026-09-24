@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sleep_sounds/features/pro/paywall_page.dart';
 import 'package:sleep_sounds/features/pro/pro_features.dart';
+import 'package:sleep_sounds/l10n/l10n.dart';
 import 'package:sleep_sounds/main.dart';
 
 const _storePro = StoreProduct(
@@ -29,6 +30,8 @@ Future<FakeBillingGateway> openPaywall(
   setUp?.call(billing);
   await tester.pumpWidget(
     MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: factoryDarkTheme(),
       home: Builder(
         builder: (context) => Scaffold(

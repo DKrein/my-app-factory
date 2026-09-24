@@ -4,6 +4,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
+import '../../l10n/l10n.dart';
+
 /// Schedules the daily "It's Capytime!" local notification and persists the
 /// user's on/off + time choice. A single instance is shared by `main()`
 /// (which restores any previously scheduled reminder on app start) and the
@@ -59,16 +61,17 @@ class BedtimeReminderService {
       scheduled = scheduled.add(const Duration(days: 1));
     }
 
+    final l10n = deviceL10n();
     await _plugin.zonedSchedule(
       _notificationId,
-      "It's Capytime!",
-      "It's Capytime! Time to get cozy and sleepy.",
+      l10n.reminderNotificationTitle,
+      l10n.reminderNotificationBody,
       scheduled,
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'bedtime_reminder',
-          'Bedtime reminder',
-          channelDescription: 'Daily reminder to wind down for sleep',
+          l10n.reminderChannelName,
+          channelDescription: l10n.reminderChannelDescription,
           importance: Importance.high,
           priority: Priority.high,
         ),
