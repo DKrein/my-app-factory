@@ -7,6 +7,7 @@ import 'package:factory_storage/factory_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../content/sounds.dart';
+import '../mixes/saved_mix.dart';
 import 'sleep_duration.dart';
 
 typedef AudioGatewayFactory = AudioGateway Function({
@@ -80,6 +81,53 @@ class PlaybackController extends ChangeNotifier {
   }
 
   void commitVolumes() => _saveSession();
+
+  /// The sounds and volumes selected right now, ready to be saved.
+  SavedMix snapshot({required String name, required bool includeTimer}) =>
+      SavedMix(
+        name: name,
+        volumes: {for (final id in _active.keys) id: _volumes[id] ?? 1.0},
+        timerMinutes: includeTimer ? timerMinutes : null,
+      );
+
+  /// Whether the selection is exactly [mix]: same sounds, same volumes.
+  bool isMix(SavedMix mix) =>
+      mix.volumes.length == _active.length &&
+      mix.volumes.entries.every(
+        (e) =>
+            _active.containsKey(e.key) &&
+            ((_volumes[e.key] ?? 1) - e.value).abs() < .01,
+      );
+
+  /// Makes the selection exactly [mix] and plays it. The timer changes only if
+  /// the mix carries one.
+  Future<void> applyMix(SavedMix mix) async {
+    final known = [
+      for (final sound in sounds)
+        if (mix.volumes.containsKey(sound.id)) sound,
+    ];
+    if (known.isEmpty) return;
+
+    for (final layer in _active.values.toList()) {
+      if (!mix.volumes.containsKey(layer.sound.id)) {
+        await _deselect(layer.sound);
+      }
+    }
+    for (final sound in known) {
+      _volumes[sound.id] = mix.volumes[sound.id]!.clamp(minVolume, 1.0);
+    }
+    if (playing) _rebalance();
+    for (final sound in known) {
+      if (!isSelected(sound)) await toggle(sound);
+    }
+    final minutes = mix.timerMinutes;
+    if (minutes != null && sleepDurations.any((d) => d.minutes == minutes)) {
+      setTimer(minutes);
+    }
+    if (!playing) await togglePlaying();
+    _saveSession();
+    notifyListeners();
+  }
 
   bool get hasSounds => _active.isNotEmpty;
 

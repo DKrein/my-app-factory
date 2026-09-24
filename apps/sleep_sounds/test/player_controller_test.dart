@@ -2,6 +2,7 @@ import 'package:factory_audio/factory_audio.dart';
 import 'package:factory_storage/factory_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sleep_sounds/content/sounds.dart';
+import 'package:sleep_sounds/features/mixes/saved_mix.dart';
 import 'package:sleep_sounds/features/player/player_controller.dart';
 import 'package:sleep_sounds/features/player/sleep_duration.dart';
 
@@ -205,6 +206,152 @@ void main() {
         playback.dispose();
       },
     );
+  });
+
+  group('mixes', () {
+    final waves = sounds.firstWhere((s) => s.id == 'waves');
+
+    testWidgets(
+      'a snapshot holds the sounds, volumes and optionally the timer',
+      (tester) async {
+        await playback.toggle(rain);
+        await playback.toggle(crickets);
+        playback.setSoundVolume(rain, .5);
+        playback.setTimer(180);
+
+        final withTimer = playback.snapshot(name: 'A', includeTimer: true);
+        final without = playback.snapshot(name: 'B', includeTimer: false);
+
+        expect(withTimer.volumes, {'rain': .5, 'crickets': 1.0});
+        expect(withTimer.timerMinutes, 180);
+        expect(without.timerMinutes, isNull);
+        playback.dispose();
+      },
+    );
+
+    testWidgets('isMix is true only for the same sounds and volumes', (
+      tester,
+    ) async {
+      await playback.toggle(rain);
+      playback.setSoundVolume(rain, .5);
+
+      expect(
+        playback.isMix(const SavedMix(name: 'x', volumes: {'rain': .5})),
+        isTrue,
+      );
+      expect(
+        playback.isMix(const SavedMix(name: 'x', volumes: {'rain': 1.0})),
+        isFalse,
+      );
+      expect(
+        playback.isMix(
+          const SavedMix(name: 'x', volumes: {'rain': .5, 'waves': 1.0}),
+        ),
+        isFalse,
+      );
+      playback.dispose();
+    });
+
+    testWidgets('loading a mix replaces the selection and plays it', (
+      tester,
+    ) async {
+      await playback.toggle(rain);
+
+      await playback.applyMix(
+        const SavedMix(
+          name: 'Night',
+          volumes: {'waves': .4, 'crickets': .8},
+          timerMinutes: 180,
+        ),
+      );
+
+      expect(playback.isSelected(rain), isFalse);
+      expect(playback.isSelected(waves), isTrue);
+      expect(playback.isSelected(crickets), isTrue);
+      expect(playback.volumeOf(waves), .4);
+      expect(playback.volumeOf(crickets), .8);
+      expect(playback.timerMinutes, 180);
+      expect(playback.playing, isTrue);
+      expect(gateways.first.disposed, isTrue);
+      expect(gateways.last.playingAsset, crickets.asset);
+      expect(
+        playback.isMix(playback.snapshot(name: 'x', includeTimer: false)),
+        isTrue,
+      );
+      playback.dispose();
+    });
+
+    testWidgets('a mix without a timer leaves the timer alone', (tester) async {
+      playback.setTimer(360);
+
+      await playback.applyMix(
+        const SavedMix(name: 'Quiet', volumes: {'rain': 1.0}),
+      );
+
+      expect(playback.timerMinutes, 360);
+      expect(playback.isSelected(rain), isTrue);
+      playback.dispose();
+    });
+
+    testWidgets('a new sound in the mix starts at its saved gain, not full', (
+      tester,
+    ) async {
+      await playback.applyMix(
+        const SavedMix(name: 'Soft', volumes: {'rain': .3}),
+      );
+
+      expect(gateways.single.volume, PlaybackController.mixGain(.3, .09));
+      playback.dispose();
+    });
+
+    testWidgets('loading resumes a paused selection that already matches', (
+      tester,
+    ) async {
+      await playback.toggle(rain);
+      await playback.togglePlaying();
+      expect(playback.playing, isFalse);
+
+      await playback.applyMix(
+        const SavedMix(name: 'Same', volumes: {'rain': 1.0}),
+      );
+
+      expect(playback.playing, isTrue);
+      expect(gateways.single.playingAsset, rain.asset);
+      playback.dispose();
+    });
+
+    testWidgets('a mix whose sounds are all gone does nothing', (tester) async {
+      await playback.toggle(rain);
+
+      await playback.applyMix(
+        const SavedMix(name: 'Old', volumes: {'removed_sound': 1.0}),
+      );
+
+      expect(playback.isSelected(rain), isTrue);
+      playback.dispose();
+    });
+
+    testWidgets('loading a mix is saved with the last session', (tester) async {
+      final storage = MemoryKeyValueStore();
+      final controller = PlaybackController(
+        createGateway: createGateway,
+        storage: storage,
+      );
+
+      await controller.applyMix(
+        const SavedMix(
+          name: 'Night',
+          volumes: {'waves': .4},
+          timerMinutes: 180,
+        ),
+      );
+
+      final saved = await storage.readString('last_session_v1');
+      expect(saved, contains('"soundIds":["waves"]'));
+      expect(saved, contains('"timerMinutes":180'));
+      expect(saved, contains('"waves":0.4'));
+      controller.dispose();
+    });
   });
 
   group('individual volume', () {

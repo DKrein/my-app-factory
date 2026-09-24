@@ -46,4 +46,30 @@ void main() {
     expect(pro.showAds, isFalse);
     expect(notified, greaterThan(0));
   });
+
+  test('a free user keeps one saved mix, Pro any number', () async {
+    final billing = newBilling();
+    final pro = ProFeatures(billing.entitlements);
+
+    expect(ProFeatures.freeMixLimit, 1);
+    expect(pro.canSaveMix(0), isTrue);
+    expect(pro.canSaveMix(1), isFalse);
+    expect(pro.canSaveMix(5), isFalse);
+
+    await billing.buyNonConsumable(defaultProProduct);
+
+    expect(pro.canSaveMix(1), isTrue);
+    expect(pro.canSaveMix(50), isTrue);
+  });
+
+  test('only Pro sets individual volumes', () async {
+    final billing = newBilling();
+    final pro = ProFeatures(billing.entitlements);
+
+    expect(pro.canSetIndividualVolume, isFalse);
+
+    await billing.buyNonConsumable(defaultProProduct);
+
+    expect(pro.canSetIndividualVolume, isTrue);
+  });
 }

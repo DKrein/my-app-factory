@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 class ProFeatures {
   const ProFeatures(this._entitlements);
 
+  /// Mixes a free user may keep saved.
+  static const freeMixLimit = 1;
+
   /// Entitlement granted by the one-time Pro purchase.
   static const entitlement = 'pro';
 
@@ -19,4 +22,7 @@ class ProFeatures {
   bool get showAds => !isPro;
 
   bool get canSetIndividualVolume => isPro;
+
+  /// Whether one more mix may be saved when [savedCount] already are.
+  bool canSaveMix(int savedCount) => isPro || savedCount < freeMixLimit;
 }

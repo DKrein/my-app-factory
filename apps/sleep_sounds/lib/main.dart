@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import 'app_config.g.dart';
 import 'features/library/library_page.dart';
+import 'features/mixes/mix_library.dart';
 import 'features/player/player_controller.dart';
 import 'features/pro/pro_features.dart';
 import 'features/reminders/bedtime_reminder.dart';
@@ -87,6 +88,7 @@ class SleepSoundsApp extends StatefulWidget {
 
 class _SleepSoundsAppState extends State<SleepSoundsApp> {
   late final PlaybackController _playback;
+  late final MixLibrary _mixes;
   late final KeyValueStore _storage;
   late final AdsGateway _ads;
   late final BillingGateway _billing;
@@ -104,6 +106,8 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
       storage: _storage,
     );
     unawaited(_playback.restore());
+    _mixes = MixLibrary(_storage);
+    unawaited(_mixes.load());
     widget.nowPlaying?.bindTransport(
       onPlay: _playback.togglePlaying,
       onPause: _playback.togglePlaying,
@@ -120,6 +124,7 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
   @override
   void dispose() {
     _playback.dispose();
+    _mixes.dispose();
     super.dispose();
   }
 
@@ -132,6 +137,7 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
       storage: _storage,
       next: LibraryPage(
         playback: _playback,
+        mixes: _mixes,
         storage: _storage,
         ads: _ads,
         billing: _billing,

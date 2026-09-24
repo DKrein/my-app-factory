@@ -19,6 +19,9 @@ import '../common/starfield_background.dart';
 import 'card_volume_slider.dart';
 import 'equalizer_bars.dart';
 import '../player/player_controller.dart';
+import '../mixes/mix_chips.dart';
+import '../mixes/mix_dialogs.dart';
+import '../mixes/mix_library.dart';
 import '../pro/paywall_page.dart';
 import '../pro/pro_features.dart';
 import '../player/duration_carousel.dart';
@@ -29,12 +32,14 @@ class LibraryPage extends StatefulWidget {
   const LibraryPage({
     super.key,
     required this.playback,
+    required this.mixes,
     required this.storage,
     required this.ads,
     required this.billing,
   });
 
   final PlaybackController playback;
+  final MixLibrary mixes;
   final KeyValueStore storage;
   final AdsGateway ads;
   final BillingGateway billing;
@@ -184,6 +189,7 @@ class _LibraryPageState extends State<LibraryPage> {
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                             ),
+                            _saveMixButton(),
                             _playPauseButton(),
                           ],
                         ),
@@ -195,6 +201,10 @@ class _LibraryPageState extends State<LibraryPage> {
                           listenable: widget.playback,
                           builder: (context, _) => _favoritesRow(),
                         ),
+                      ),
+                      MixChips(
+                        library: widget.mixes,
+                        playback: widget.playback,
                       ),
                       const SizedBox(height: 12),
                       Padding(
@@ -243,6 +253,54 @@ class _LibraryPageState extends State<LibraryPage> {
       ),
     );
   }
+
+  Widget _saveMixButton() => ListenableBuilder(
+    listenable: Listenable.merge([
+      widget.playback,
+      widget.mixes,
+      ProFeatures(widget.billing.entitlements).changes,
+    ]),
+    builder: (context, _) {
+      final pro = ProFeatures(widget.billing.entitlements);
+      final locked = !pro.canSaveMix(widget.mixes.mixes.length);
+      final enabled = widget.playback.hasSounds;
+      return IconButton(
+        tooltip: locked ? 'Save mix (Pro)' : 'Save mix',
+        onPressed: !enabled
+            ? null
+            : locked
+            ? () => PaywallPage.open(context, widget.billing)
+            : () => showSaveMixDialog(
+                context,
+                library: widget.mixes,
+                playback: widget.playback,
+              ),
+        icon: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(
+              Symbols.bookmark_add_rounded,
+              size: 26,
+              color: enabled
+                  ? FactoryColors.mist
+                  : FactoryColors.mutedInk.withValues(alpha: .45),
+            ),
+            if (locked)
+              const Positioned(
+                right: -4,
+                bottom: -4,
+                child: Icon(
+                  Symbols.lock_rounded,
+                  size: 13,
+                  fill: 1,
+                  color: FactoryColors.mutedInk,
+                ),
+              ),
+          ],
+        ),
+      );
+    },
+  );
 
   Widget _playPauseButton() => ListenableBuilder(
     listenable: widget.playback,
