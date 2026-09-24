@@ -3,12 +3,6 @@ import 'package:factory_core/factory_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
-/// Standard factory entitlement identifiers.
-abstract final class FactoryEntitlements {
-  /// Unlocks ad removal throughout the application.
-  static const removeAds = 'remove_ads';
-}
-
 /// Representation of a product available in the store.
 final class StoreProduct {
   const StoreProduct({

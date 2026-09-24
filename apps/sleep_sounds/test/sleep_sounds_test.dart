@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:sleep_sounds/features/library/equalizer_bars.dart';
+import 'package:sleep_sounds/features/pro/pro_features.dart';
 import 'package:sleep_sounds/main.dart';
 
 Future<void> pumpPastSplash(WidgetTester tester) async {
@@ -68,7 +69,7 @@ void main() {
     final ads = PreviewAdsGateway(initialized: true);
     final billing = FakeBillingGateway(
       catalog: sleepSoundsCatalog,
-      initialProducts: [defaultRemoveAdsProduct],
+      initialProducts: [defaultProProduct],
     );
 
     await tester.pumpWidget(
@@ -312,7 +313,7 @@ void main() {
     final ads = PreviewAdsGateway(initialized: true);
     final billing = FakeBillingGateway(
       catalog: sleepSoundsCatalog,
-      initialProducts: [defaultRemoveAdsProduct],
+      initialProducts: [defaultProProduct],
     );
 
     await tester.pumpWidget(
@@ -332,14 +333,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Settings'), findsOneWidget);
-    expect(find.textContaining(r'$2.99'), findsOneWidget);
+    expect(find.textContaining(r'$4.99'), findsOneWidget);
 
     // Tap the REMOVE ADS button
     await tester.tap(find.text('REMOVE ADS'));
     await tester.pumpAndSettle();
 
     // Entitlement granted
-    expect(billing.entitlements.has(FactoryEntitlements.removeAds), isTrue);
+    expect(billing.entitlements.has(ProFeatures.entitlement), isTrue);
     expect(find.text('Premium Active'), findsOneWidget);
 
     // Close settings modal by popping navigator
@@ -552,7 +553,7 @@ void main() {
     testWidgets('shows the price reported by the store', (tester) async {
       await openSettings(tester, const [
         StoreProduct(
-          id: 'sleep_sounds_remove_ads',
+          id: 'sleep_sounds_pro',
           title: 'Remove Ads',
           description: 'No ads',
           price: r'$3.99',
@@ -560,7 +561,7 @@ void main() {
       ]);
 
       expect(find.textContaining(r'$3.99'), findsOneWidget);
-      expect(find.textContaining(r'$2.99'), findsNothing);
+      expect(find.textContaining(r'$4.99'), findsNothing);
     });
 
     testWidgets('disables the purchase when the store has no product', (
@@ -576,7 +577,7 @@ void main() {
       await tester.tap(find.text('REMOVE ADS'));
       await tester.pumpAndSettle();
 
-      expect(billing.entitlements.has(FactoryEntitlements.removeAds), isFalse);
+      expect(billing.entitlements.has(ProFeatures.entitlement), isFalse);
     });
   });
 }

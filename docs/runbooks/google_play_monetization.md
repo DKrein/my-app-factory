@@ -15,7 +15,7 @@ Este runbook descreve o procedimento operacional para configurar o Google Play C
 1. No menu lateral do Play Console, navegue até: **Monetizar com o Play > Produtos no app** (*In-app products*).
 2. Clique em **Criar produto**.
 3. Preencha os campos:
-   - **ID do produto**: Deve corresponder exatamente ao ID declarado no catálogo do app (ex: `sleep_sounds_remove_ads`).
+   - **ID do produto**: Deve corresponder exatamente ao ID declarado no catálogo do app (ex: `sleep_sounds_pro`).
    - **Nome**: Ex: `Remover Anúncios`.
    - **Descrição**: Ex: `Desativa permanentemente todos os banners e anúncios do aplicativo.`
    - **Preço padrão**: Defina o valor (ex: `R$ 9,90`). O Google Play calculará os preços locais para outros países automaticamente.
@@ -77,7 +77,7 @@ Ao abrir o app instalado via faixa de teste interno com a conta de testador:
 4. Toque em **Comprar**.
 5. **Resultado Esperado:**
    - O app recebe o evento `PurchaseProgressStatus.purchased`.
-   - O entitlement `remove_ads` é registrado no `EntitlementStore`.
+   - O entitlement `pro` é registrado no `EntitlementStore`.
    - O banner de anúncio desaparece instantaneamente via `AdsPolicy`.
    - O app chama `completePurchase` no gateway, confirmando a transação.
 
@@ -104,7 +104,7 @@ Ao abrir o app instalado via faixa de teste interno com a conta de testador:
 4. **Resultado Esperado:**
    - O app consulta o histórico da conta na Google Play Store.
    - A compra não consumível é detectada e o status `PurchaseProgressStatus.restored` é emitido.
-   - O entitlement `remove_ads` é restaurado com sucesso.
+   - O entitlement `pro` é restaurado com sucesso.
 
 ### Teste E: Inicialização Offline
 1. Após a compra ter sido efetuada e gravada no storage local (`factory_storage`).

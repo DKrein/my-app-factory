@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'app_config.g.dart';
 import 'features/library/library_page.dart';
 import 'features/player/player_controller.dart';
+import 'features/pro/pro_features.dart';
 import 'features/reminders/bedtime_reminder.dart';
 import 'features/splash/splash_screen.dart';
 
@@ -17,19 +18,19 @@ import 'package:factory_ui/factory_ui.dart';
 const sleepSoundsCatalog = BillingCatalog(
   products: [
     BillingProduct(
-      id: AppConfig.removeAdsProductId,
-      entitlements: {FactoryEntitlements.removeAds},
-      title: 'Remove Ads',
-      description: 'Turn off every banner and ad in the app.',
+      id: AppConfig.proProductId,
+      entitlements: {ProFeatures.entitlement},
+      title: 'Sleepy Capy Pro',
+      description: 'One-time purchase. Unlocks every Pro feature.',
     ),
   ],
 );
 
-const defaultRemoveAdsProduct = StoreProduct(
-  id: AppConfig.removeAdsProductId,
-  title: 'Remove Ads',
-  description: 'Permanently disables all ads',
-  price: r'$2.99',
+const defaultProProduct = StoreProduct(
+  id: AppConfig.proProductId,
+  title: 'Sleepy Capy Pro',
+  description: 'One-time purchase. Unlocks every Pro feature.',
+  price: r'$4.99',
 );
 
 void main() async {
@@ -112,7 +113,7 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
         widget.billing ??
         FakeBillingGateway(
           catalog: sleepSoundsCatalog,
-          initialProducts: [defaultRemoveAdsProduct],
+          initialProducts: [defaultProProduct],
         );
   }
 

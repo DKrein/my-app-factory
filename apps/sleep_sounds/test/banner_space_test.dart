@@ -48,10 +48,10 @@ Future<void> pumpApp(
 }) async {
   final billing = FakeBillingGateway(
     catalog: sleepSoundsCatalog,
-    initialProducts: [defaultRemoveAdsProduct],
+    initialProducts: [defaultProProduct],
   );
   if (pro) {
-    await billing.buyNonConsumable(defaultRemoveAdsProduct);
+    await billing.buyNonConsumable(defaultProProduct);
   }
   await tester.pumpWidget(
     SleepSoundsApp(

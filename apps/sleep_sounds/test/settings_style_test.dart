@@ -18,7 +18,7 @@ Future<void> pumpSettings(WidgetTester tester) async {
         body: SettingsSheet(
           billing: FakeBillingGateway(
             catalog: sleepSoundsCatalog,
-            initialProducts: [defaultRemoveAdsProduct],
+            initialProducts: [defaultProProduct],
           ),
           storage: MemoryKeyValueStore(),
         ),

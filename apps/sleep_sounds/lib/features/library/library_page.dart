@@ -19,6 +19,7 @@ import '../../content/sounds.dart';
 import '../common/starfield_background.dart';
 import 'equalizer_bars.dart';
 import '../player/player_controller.dart';
+import '../pro/pro_features.dart';
 import '../player/duration_carousel.dart';
 import '../player/sleep_duration.dart';
 import '../reminders/bedtime_reminder.dart';
@@ -120,21 +121,17 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final adsPolicy = CustomAdsPolicy(
-      (placement) =>
-          !widget.billing.entitlements.has(FactoryEntitlements.removeAds),
-    );
+    final pro = ProFeatures(widget.billing.entitlements);
+    final adsPolicy = CustomAdsPolicy((placement) => pro.showAds);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: StarfieldBackground(
         child: SafeArea(
           child: ListenableBuilder(
-            listenable: widget.billing.entitlements,
+            listenable: pro.changes,
             builder: (context, _) {
-              final showAds = !widget.billing.entitlements.has(
-                FactoryEntitlements.removeAds,
-              );
+              final showAds = pro.showAds;
               final reservedForBanner = showAds && _bannerLoaded
                   ? _bannerHeight
                   : 0.0;
@@ -653,9 +650,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
   );
 
   Future<void> _loadProduct() async {
-    final result = await widget.billing.queryProducts({
-      AppConfig.removeAdsProductId,
-    });
+    final result = await widget.billing.queryProducts({AppConfig.proProductId});
     if (!mounted) return;
     setState(() {
       if (result is Success<List<StoreProduct>> && result.value.isNotEmpty) {
@@ -705,12 +700,11 @@ class _SettingsSheetState extends State<SettingsSheet> {
   @override
   Widget build(BuildContext context) {
     final billing = widget.billing;
+    final pro = ProFeatures(billing.entitlements);
     return ListenableBuilder(
-      listenable: billing.entitlements,
+      listenable: pro.changes,
       builder: (context, _) {
-        final isPremium = billing.entitlements.has(
-          FactoryEntitlements.removeAds,
-        );
+        final isPremium = pro.isPro;
         final product = _product;
 
         return StarfieldBackground(
@@ -806,7 +800,9 @@ class _SettingsSheetState extends State<SettingsSheet> {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'One-time purchase · ${product?.price ?? r'$2.99'}',
+                                  product == null
+                                      ? 'One-time purchase'
+                                      : 'One-time purchase · ${product.price}',
                                   style: const TextStyle(
                                     color: FactoryColors.mutedInk,
                                     fontSize: 12,

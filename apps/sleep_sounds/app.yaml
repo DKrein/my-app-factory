@@ -22,6 +22,6 @@ monetization:
     banner_ad_unit_id: ca-app-pub-3940256099942544/6300978111
   billing:
     products:
-      - id: sleep_sounds_remove_ads
+      - id: sleep_sounds_pro
         entitlements:
-          - remove_ads
+          - pro

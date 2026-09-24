@@ -8,5 +8,5 @@ abstract final class AppConfig {
   static const privacyPolicyUrl =
       'https://douglaskrein.com/projects/sleep-sounds/privacy-policy';
   static const bannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
-  static const removeAdsProductId = 'sleep_sounds_remove_ads';
+  static const proProductId = 'sleep_sounds_pro';
 }
