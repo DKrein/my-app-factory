@@ -4,6 +4,7 @@ import 'package:factory_billing/factory_billing.dart';
 import 'package:factory_storage/factory_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:sleep_sounds/main.dart';
 
 Future<void> pumpPastSplash(WidgetTester tester) async {
@@ -104,6 +105,46 @@ void main() {
     await tester.pump();
   });
 
+  testWidgets('hearts: badge on inactive favorites, button only on active', (
+    tester,
+  ) async {
+    final storage = MemoryKeyValueStore();
+    await storage.writeString('favorites_sounds_v2', 'rain');
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      SleepSoundsApp(
+        storage: storage,
+        createGateway: createGateway,
+        ads: PreviewAdsGateway(initialized: true),
+        billing: FakeBillingGateway(catalog: sleepSoundsCatalog),
+      ),
+    );
+    await pumpPastSplash(tester);
+
+    expect(find.byIcon(Symbols.favorite_rounded), findsOneWidget);
+    expect(find.byTooltip('Add to favorites'), findsNothing);
+    expect(find.byTooltip('Remove from favorites'), findsNothing);
+
+    await tester.tap(find.text('Waves'));
+    await tester.pump();
+
+    expect(find.byTooltip('Add to favorites'), findsOneWidget);
+    expect(find.byIcon(Symbols.favorite_rounded), findsNWidgets(2));
+
+    await tester.tap(find.byTooltip('Add to favorites'));
+    await tester.pump();
+
+    expect(find.byTooltip('Remove from favorites'), findsOneWidget);
+    expect(playingAssets, ['assets/audio/waves.ogg']);
+
+    await tester.tap(find.text('Waves'));
+    await tester.pump();
+  });
+
   testWidgets('Favorites persist and the Favorites card plays them all', (
     tester,
   ) async {
@@ -123,11 +164,20 @@ void main() {
     );
     await pumpPastSplash(tester);
 
-    final hearts = find.byIcon(Icons.favorite_border);
-    await tester.tap(hearts.at(0));
+    expect(find.byTooltip('Add to favorites'), findsNothing);
+
+    await tester.tap(find.text('Rain'));
     await tester.pump();
-    await tester.tap(hearts.at(0));
+    await tester.tap(find.byTooltip('Add to favorites'));
     await tester.pump();
+    await tester.tap(find.text('Rain'));
+    await tester.tap(find.text('Rain in tent'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Add to favorites'));
+    await tester.pump();
+    await tester.tap(find.text('Rain in tent'));
+    await tester.pump();
+    expect(playingAssets, isEmpty);
 
     expect(
       await storage.readString('favorites_sounds_v2'),

@@ -9,6 +9,7 @@ import 'package:factory_storage/factory_storage.dart';
 import 'package:factory_ui/factory_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_config.g.dart';
@@ -321,23 +322,57 @@ class _LibraryPageState extends State<LibraryPage> {
     style: Theme.of(context).textTheme.titleSmall,
   );
 
-  Widget _card(Sound sound) {
+  static const _heartSlotHeight = 32.0;
+
+  Widget _heart({
+    required bool filled,
+    required Color color,
+    double size = 22,
+  }) => Icon(
+    Symbols.favorite_rounded,
+    color: color,
+    size: size,
+    fill: filled ? 1 : 0,
+    weight: 400,
+  );
+
+  /// Only the active card has a tappable heart; a favorite that is not active
+  /// shows a small badge instead. The slot keeps the same height either way,
+  /// so icons and labels do not shift when a card is toggled.
+  Widget _heartSlot(Sound sound, {required bool active}) {
     final favorite = favorites.contains(sound.id);
+    if (active) {
+      return IconButton(
+        visualDensity: VisualDensity.compact,
+        tooltip: favorite ? 'Remove from favorites' : 'Add to favorites',
+        onPressed: () => _toggleFavorite(sound),
+        icon: _heart(
+          filled: favorite,
+          color: favorite ? FactoryColors.ink : FactoryColors.mutedInk,
+        ),
+      );
+    }
+    if (favorite) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 10, right: 10),
+        child: _heart(filled: true, color: FactoryColors.ink, size: 14),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _card(Sound sound) {
+    final active = widget.playback.isSelected(sound);
     return _cardShell(
-      active: widget.playback.isSelected(sound),
+      active: active,
       onTap: () => widget.playback.toggle(sound),
       child: Column(
         children: [
-          Align(
-            alignment: Alignment.topRight,
-            child: IconButton(
-              visualDensity: VisualDensity.compact,
-              iconSize: 20,
-              onPressed: () => _toggleFavorite(sound),
-              icon: Icon(
-                favorite ? Icons.favorite : Icons.favorite_border,
-                color: favorite ? FactoryColors.mist : FactoryColors.mutedInk,
-              ),
+          SizedBox(
+            height: _heartSlotHeight,
+            child: Align(
+              alignment: Alignment.topRight,
+              child: _heartSlot(sound, active: active),
             ),
           ),
           sound.icon.build(FactoryColors.mist, 34),
@@ -361,7 +396,9 @@ class _LibraryPageState extends State<LibraryPage> {
         if (favoriteSounds.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Tap the heart on a sound to add it to Favorites.'),
+              content: Text(
+                'Start a sound and tap its heart to add it to Favorites.',
+              ),
             ),
           );
           return;
