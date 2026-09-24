@@ -19,6 +19,15 @@ void main() {
       expect(gateway.playingAsset, isNull);
     });
 
+    test('fadeTo records the target volume and ramp duration', () async {
+      final gateway = PreviewAudioGateway();
+
+      await gateway.fadeTo(0.2, const Duration(milliseconds: 250));
+
+      expect(gateway.volume, equals(0.2));
+      expect(gateway.lastFadeDuration, const Duration(milliseconds: 250));
+    });
+
     test('dispose clears state and marks the gateway disposed', () async {
       final gateway = PreviewAudioGateway();
       await gateway.play('assets/test.ogg');

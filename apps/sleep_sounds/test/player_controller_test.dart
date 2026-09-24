@@ -40,6 +40,57 @@ void main() {
     playback.dispose();
   });
 
+  group('mix headroom', () {
+    final waves = sounds.firstWhere((s) => s.id == 'waves');
+
+    test('gain is 0.7 for one sound and falls with 1/sqrt(n)', () {
+      expect(PlaybackController.gainFor(0), .7);
+      expect(PlaybackController.gainFor(1), .7);
+      expect(PlaybackController.gainFor(3), closeTo(.7 / 1.7320508, 1e-6));
+      expect(PlaybackController.gainFor(5), closeTo(.7 / 2.2360680, 1e-6));
+    });
+
+    test('mix power stays constant as sounds are added', () {
+      double power(int n) =>
+          n * PlaybackController.gainFor(n) * PlaybackController.gainFor(n);
+      expect(power(5), closeTo(power(1), 1e-9));
+    });
+
+    testWidgets('adding a sound ramps the others down over 250 ms', (
+      tester,
+    ) async {
+      await playback.toggle(rain);
+      expect(gateways.first.volume, PlaybackController.gainFor(1));
+
+      await playback.toggle(crickets);
+
+      expect(gateways.first.volume, PlaybackController.gainFor(2));
+      expect(
+        gateways.first.lastFadeDuration,
+        const Duration(milliseconds: 250),
+      );
+      expect(gateways.last.volume, PlaybackController.gainFor(2));
+      playback.dispose();
+    });
+
+    testWidgets('removing a sound ramps the rest back up', (tester) async {
+      await playback.toggle(rain);
+      await playback.toggle(crickets);
+      await playback.toggle(waves);
+      expect(gateways.first.volume, PlaybackController.gainFor(3));
+
+      await playback.toggle(waves);
+
+      expect(gateways.first.volume, PlaybackController.gainFor(2));
+      expect(gateways[1].volume, PlaybackController.gainFor(2));
+      expect(
+        gateways.first.lastFadeDuration,
+        const Duration(milliseconds: 250),
+      );
+      playback.dispose();
+    });
+  });
+
   testWidgets('pausing keeps every sound selected', (tester) async {
     await playback.toggle(rain);
     await playback.toggle(crickets);

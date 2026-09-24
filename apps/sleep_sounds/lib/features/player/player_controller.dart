@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:factory_audio/factory_audio.dart';
 import 'package:flutter/foundation.dart';
@@ -15,7 +16,8 @@ typedef AudioGatewayFactory = AudioGateway Function({
 class PlaybackController extends ChangeNotifier {
   PlaybackController({required this._createGateway, this._nowPlaying});
 
-  static const _volume = .7;
+  static const _masterGain = .7;
+  static const _rampDuration = Duration(milliseconds: 250);
 
   final AudioGatewayFactory _createGateway;
   final NowPlayingNotifier? _nowPlaying;
@@ -25,6 +27,19 @@ class PlaybackController extends ChangeNotifier {
   bool playing = false;
   int timerMinutes = defaultSleepMinutes;
   int remainingSeconds = 0;
+
+  /// Volume of each layer when [count] sounds play together.
+  ///
+  /// Ambient sounds are uncorrelated, so their powers add: n sounds at the
+  /// same gain are 10*log10(n) dB louder (+7 dB with 5 sounds) and their peaks
+  /// approach clipping. Scaling each layer by 1/sqrt(n) keeps the mix power
+  /// equal to the average single sound, and one sound stays at [_masterGain].
+  /// See docs/adr/0001-mix-headroom.md.
+  @visibleForTesting
+  static double gainFor(int count) =>
+      _masterGain / math.sqrt(math.max(1, count));
+
+  double get _layerGain => gainFor(_active.length);
 
   bool get hasSounds => _active.isNotEmpty;
 
@@ -43,6 +58,7 @@ class PlaybackController extends ChangeNotifier {
     );
     _active[sound.id] = layer;
     playing = true;
+    if (wasPlaying) _rebalance(except: sound.id);
     notifyListeners();
 
     await Future.wait(
@@ -93,7 +109,7 @@ class PlaybackController extends ChangeNotifier {
   }
 
   Future<void> _start(({Sound sound, AudioGateway gateway}) layer) async {
-    await layer.gateway.setVolume(_volume);
+    await layer.gateway.setVolume(_layerGain);
     await layer.gateway.play(layer.sound.asset, title: layer.sound.name);
   }
 
@@ -106,9 +122,17 @@ class PlaybackController extends ChangeNotifier {
     } else {
       _showNowPlaying();
     }
+    if (playing) _rebalance();
     notifyListeners();
     await layer.gateway.pause();
     await layer.gateway.dispose();
+  }
+
+  void _rebalance({String? except}) {
+    for (final entry in _active.entries) {
+      if (entry.key == except) continue;
+      unawaited(entry.value.gateway.fadeTo(_layerGain, _rampDuration));
+    }
   }
 
   void _beginCountdown() {
