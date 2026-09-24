@@ -50,10 +50,8 @@ void main() {
     await pumpPastSplash(tester);
 
     expect(find.text('Good night'), findsOneWidget);
-    expect(find.text('Soft rain'), findsOneWidget);
-    expect(find.text('Night waves'), findsOneWidget);
-    expect(find.text('Brown noise'), findsOneWidget);
-    expect(find.text('Fan'), findsOneWidget);
+    expect(find.text('Rain'), findsOneWidget);
+    expect(find.text('Waves'), findsOneWidget);
 
     // Initial banner is displayed
     expect(find.text('Preview Ad [banner_home]'), findsOneWidget);
@@ -83,7 +81,7 @@ void main() {
 
     // Check that favorite was saved in storage
     final stored = await storage.readString('favorites_sounds_v1');
-    expect(stored, contains('Soft rain'));
+    expect(stored, contains('Rain'));
 
     // Icon should now be filled favorite
     expect(find.byIcon(Icons.favorite), findsOneWidget);
@@ -161,7 +159,7 @@ void main() {
     await pumpPastSplash(tester);
 
     // Tap on sound card to open the full-screen player
-    await tester.tap(find.text('Soft rain'));
+    await tester.tap(find.text('Rain'));
     await tester.pumpAndSettle();
 
     // Player is open, audio is playing, and the 12h default timer is running
@@ -204,7 +202,7 @@ void main() {
         ),
       );
       await pumpPastSplash(tester);
-      await tester.tap(find.text('Soft rain'));
+      await tester.tap(find.text('Rain'));
       await tester.pumpAndSettle();
       await selectDuration(tester, '12h', label);
     }
