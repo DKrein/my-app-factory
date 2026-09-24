@@ -40,6 +40,109 @@ void main() {
     playback.dispose();
   });
 
+  group('fades', () {
+    testWidgets('play fades in over 1.5 s from silence', (tester) async {
+      await playback.toggle(rain);
+
+      expect(gateways.single.fades, [
+        (
+          volume: PlaybackController.gainFor(1),
+          duration: const Duration(milliseconds: 1500),
+        ),
+      ]);
+      playback.dispose();
+    });
+
+    testWidgets('pause fades out over 1 s, resume fades back in', (
+      tester,
+    ) async {
+      await playback.toggle(rain);
+      await playback.togglePlaying();
+
+      expect(gateways.single.fades.last, (
+        volume: 0.0,
+        duration: const Duration(seconds: 1),
+      ));
+      expect(gateways.single.playingAsset, isNull);
+
+      await playback.togglePlaying();
+
+      expect(gateways.single.fades.last, (
+        volume: PlaybackController.gainFor(1),
+        duration: const Duration(milliseconds: 1500),
+      ));
+      expect(gateways.single.playingAsset, rain.asset);
+      playback.dispose();
+    });
+
+    testWidgets('a sound added while playing fades in over 250 ms', (
+      tester,
+    ) async {
+      await playback.toggle(rain);
+      await playback.toggle(crickets);
+
+      expect(gateways.last.fades.single, (
+        volume: PlaybackController.gainFor(2),
+        duration: const Duration(milliseconds: 250),
+      ));
+      playback.dispose();
+    });
+
+    testWidgets('removing the last sound fades out over 1 s first', (
+      tester,
+    ) async {
+      await playback.toggle(rain);
+      await playback.toggle(rain);
+
+      expect(gateways.single.fades.last, (
+        volume: 0.0,
+        duration: const Duration(seconds: 1),
+      ));
+      expect(gateways.single.disposed, isTrue);
+    });
+
+    testWidgets('timer fades out over its last 4 s, then pauses', (
+      tester,
+    ) async {
+      await playback.toggle(rain);
+      playback.setTimer(15);
+
+      await tester.pump(const Duration(seconds: 895));
+      expect(gateways.single.fades.length, 1);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(playback.remainingSeconds, 4);
+      expect(gateways.single.fades.last, (
+        volume: 0.0,
+        duration: const Duration(seconds: 4),
+      ));
+      expect(gateways.single.playingAsset, rain.asset);
+
+      await tester.pump(const Duration(seconds: 4));
+      expect(playback.playing, isFalse);
+      expect(gateways.single.playingAsset, isNull);
+      playback.dispose();
+    });
+
+    testWidgets(
+      'changing the timer during the final fade brings the sound back',
+      (tester) async {
+        await playback.toggle(rain);
+        playback.setTimer(15);
+        await tester.pump(const Duration(seconds: 897));
+
+        playback.setTimer(30);
+
+        expect(gateways.single.fades.last, (
+          volume: PlaybackController.gainFor(1),
+          duration: const Duration(milliseconds: 250),
+        ));
+        expect(playback.remainingSeconds, 30 * 60);
+        playback.dispose();
+      },
+    );
+  });
+
   group('mix headroom', () {
     final waves = sounds.firstWhere((s) => s.id == 'waves');
 

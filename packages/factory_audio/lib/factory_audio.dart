@@ -22,7 +22,8 @@ abstract interface class AudioGateway {
 final class PreviewAudioGateway implements AudioGateway {
   String? playingAsset;
   double volume = 0.7;
-  Duration? lastFadeDuration;
+  final fades = <({double volume, Duration duration})>[];
+  Duration? get lastFadeDuration => fades.lastOrNull?.duration;
   bool disposed = false;
   @override
   Future<void> pause() async => playingAsset = null;
@@ -37,7 +38,7 @@ final class PreviewAudioGateway implements AudioGateway {
   @override
   Future<void> fadeTo(double value, Duration duration) async {
     volume = value;
-    lastFadeDuration = duration;
+    fades.add((volume: value, duration: duration));
   }
 
   @override

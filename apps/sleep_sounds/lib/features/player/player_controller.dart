@@ -18,11 +18,15 @@ class PlaybackController extends ChangeNotifier {
 
   static const _masterGain = .7;
   static const _rampDuration = Duration(milliseconds: 250);
+  static const _fadeInDuration = Duration(milliseconds: 1500);
+  static const _fadeOutDuration = Duration(seconds: 1);
+  static const _timerFadeDuration = Duration(seconds: 4);
 
   final AudioGatewayFactory _createGateway;
   final NowPlayingNotifier? _nowPlaying;
   final Map<String, ({Sound sound, AudioGateway gateway})> _active = {};
   Timer? _timer;
+  bool _timerFading = false;
 
   bool playing = false;
   int timerMinutes = defaultSleepMinutes;
@@ -50,6 +54,7 @@ class PlaybackController extends ChangeNotifier {
   Future<void> toggle(Sound sound) async {
     if (isSelected(sound)) return _deselect(sound);
 
+    _cancelTimerFade();
     final wasPlaying = playing;
     final wasEmpty = _active.isEmpty;
     final layer = (
@@ -62,7 +67,9 @@ class PlaybackController extends ChangeNotifier {
     notifyListeners();
 
     await Future.wait(
-      (wasPlaying ? [layer] : _active.values.toList()).map(_start),
+      (wasPlaying ? [layer] : _active.values.toList()).map(
+        (l) => _start(l, fadeIn: wasPlaying ? _rampDuration : _fadeInDuration),
+      ),
     );
     _showNowPlaying();
     if (wasEmpty) {
@@ -86,9 +93,10 @@ class PlaybackController extends ChangeNotifier {
     if (playing) {
       playing = false;
       _stopTicking();
+      _timerFading = false;
       notifyListeners();
-      await Future.wait(_active.values.map((a) => a.gateway.pause()));
       _nowPlaying?.setPlaying(false);
+      await _fadeOutAndPause(_active.values.toList(), _fadeOutDuration);
     } else {
       playing = true;
       notifyListeners();
@@ -99,6 +107,7 @@ class PlaybackController extends ChangeNotifier {
   }
 
   void setTimer(int minutes) {
+    _cancelTimerFade();
     _timer?.cancel();
     timerMinutes = minutes;
     remainingSeconds = minutes * 60;
@@ -108,9 +117,23 @@ class PlaybackController extends ChangeNotifier {
     }
   }
 
-  Future<void> _start(({Sound sound, AudioGateway gateway}) layer) async {
-    await layer.gateway.setVolume(_layerGain);
+  Future<void> _start(
+    ({Sound sound, AudioGateway gateway}) layer, {
+    Duration fadeIn = _fadeInDuration,
+  }) async {
+    await layer.gateway.setVolume(0);
     await layer.gateway.play(layer.sound.asset, title: layer.sound.name);
+    unawaited(layer.gateway.fadeTo(_layerGain, fadeIn));
+  }
+
+  /// Fades the layers out and pauses them, unless playback resumed meanwhile.
+  Future<void> _fadeOutAndPause(
+    List<({Sound sound, AudioGateway gateway})> layers,
+    Duration duration,
+  ) async {
+    await Future.wait(layers.map((l) => l.gateway.fadeTo(0, duration)));
+    if (playing) return;
+    await Future.wait(layers.map((l) => l.gateway.pause()));
   }
 
   Future<void> _deselect(Sound sound) async {
@@ -122,8 +145,11 @@ class PlaybackController extends ChangeNotifier {
     } else {
       _showNowPlaying();
     }
+    _cancelTimerFade();
     if (playing) _rebalance();
     notifyListeners();
+    final wasLast = _active.isEmpty;
+    await layer.gateway.fadeTo(0, wasLast ? _fadeOutDuration : _rampDuration);
     await layer.gateway.pause();
     await layer.gateway.dispose();
   }
@@ -133,6 +159,14 @@ class PlaybackController extends ChangeNotifier {
       if (entry.key == except) continue;
       unawaited(entry.value.gateway.fadeTo(_layerGain, _rampDuration));
     }
+  }
+
+  /// The user touched the mix or the timer during the final fade-out, so bring
+  /// the sounds back instead of letting them fade to silence.
+  void _cancelTimerFade() {
+    if (!_timerFading) return;
+    _timerFading = false;
+    _rebalance();
   }
 
   void _beginCountdown() {
@@ -151,6 +185,13 @@ class PlaybackController extends ChangeNotifier {
     _nowPlaying?.setPlaying(playing);
   }
 
+  void _beginTimerFade() {
+    _timerFading = true;
+    for (final layer in _active.values) {
+      unawaited(layer.gateway.fadeTo(0, _timerFadeDuration));
+    }
+  }
+
   void _startTicking() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
@@ -164,10 +205,12 @@ class PlaybackController extends ChangeNotifier {
   void _tick() {
     if (remainingSeconds > 1) {
       remainingSeconds--;
+      if (remainingSeconds == _timerFadeDuration.inSeconds) _beginTimerFade();
       notifyListeners();
       return;
     }
     _stopTicking();
+    _timerFading = false;
     remainingSeconds = 0;
     playing = false;
     notifyListeners();
