@@ -26,6 +26,7 @@ import '../pro/paywall_page.dart';
 import '../pro/pro_features.dart';
 import '../player/duration_carousel.dart';
 import '../player/sleep_duration.dart';
+import '../player/timer_options_sheet.dart';
 import '../reminders/bedtime_reminder.dart';
 
 class LibraryPage extends StatefulWidget {
@@ -49,17 +50,14 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
-  static const _favoritesStorageKey = 'favorites_sounds_v2';
   static const _pagePadding = EdgeInsets.symmetric(horizontal: 24);
   static const _bannerHeight = 50.0;
-  final favorites = <String>{};
   bool _bannerLoaded = false;
   StreamSubscription<PurchaseEvent>? _purchaseSubscription;
 
   @override
   void initState() {
     super.initState();
-    _loadFavorites();
     _purchaseSubscription = widget.billing.purchaseEvents.listen(
       _handlePurchaseEvent,
     );
@@ -69,24 +67,6 @@ class _LibraryPageState extends State<LibraryPage> {
   void dispose() {
     _purchaseSubscription?.cancel();
     super.dispose();
-  }
-
-  Future<void> _loadFavorites() async {
-    final raw = await widget.storage.readString(_favoritesStorageKey);
-    if (raw != null && raw.isNotEmpty && mounted) {
-      setState(() {
-        favorites.addAll(
-          raw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty),
-        );
-      });
-    }
-  }
-
-  Future<void> _toggleFavorite(Sound sound) async {
-    setState(() {
-      if (!favorites.remove(sound.id)) favorites.add(sound.id);
-    });
-    await widget.storage.writeString(_favoritesStorageKey, favorites.join(','));
   }
 
   void _handlePurchaseEvent(PurchaseEvent event) {
@@ -143,9 +123,16 @@ class _LibraryPageState extends State<LibraryPage> {
                       const SizedBox(height: 16),
                       Padding(
                         padding: _pagePadding,
-                        child: Text(
-                          'Capy Timer',
-                          style: Theme.of(context).textTheme.titleLarge,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Capy Timer',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                            ),
+                            _timerOptionsButton(),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -153,22 +140,18 @@ class _LibraryPageState extends State<LibraryPage> {
                         listenable: widget.playback,
                         builder: (context, _) => Column(
                           children: [
-                            SizedBox(
-                              height: 64,
-                              child: DurationCarousel(
-                                selectedMinutes: widget.playback.timerMinutes,
-                                onSelected: widget.playback.setTimer,
-                              ),
-                            ),
+                            SizedBox(height: 64, child: _durationCarousel()),
                             if (widget.playback.hasSounds)
                               Padding(
-                                padding: const EdgeInsets.only(top: 8),
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  8,
+                                  24,
+                                  0,
+                                ),
                                 child: Text(
-                                  !widget.playback.playing
-                                      ? 'Paused'
-                                      : widget.playback.timerMinutes == 0
-                                      ? 'Playing'
-                                      : 'Stopping in ${formatSleepRemaining(widget.playback.remainingSeconds)}',
+                                  _timerStatus(),
+                                  textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     color: FactoryColors.mist,
                                     fontWeight: FontWeight.w600,
@@ -192,14 +175,6 @@ class _LibraryPageState extends State<LibraryPage> {
                             _saveMixButton(),
                             _playPauseButton(),
                           ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: _pagePadding,
-                        child: ListenableBuilder(
-                          listenable: widget.playback,
-                          builder: (context, _) => _favoritesRow(),
                         ),
                       ),
                       MixChips(
@@ -251,6 +226,75 @@ class _LibraryPageState extends State<LibraryPage> {
           ),
         ),
       ),
+    );
+  }
+
+  String _clock(TimeOfDay time) =>
+      MaterialLocalizations.of(context)
+          .formatTimeOfDay(time, alwaysUse24HourFormat: false);
+
+  Widget _durationCarousel() {
+    final playback = widget.playback;
+    final stopAt = playback.stopAtTime;
+    return DurationCarousel(
+      durations: sleepDurationChoices(
+        timerMinutes: playback.timerMinutes,
+        stopAtLabel: stopAt == null ? null : _clock(stopAt),
+      ),
+      selectedMinutes: stopAt == null ? playback.timerMinutes : stopAtMinutes,
+      onSelected: (minutes) {
+        if (minutes != stopAtMinutes) playback.setTimer(minutes);
+      },
+    );
+  }
+
+  String _timerStatus() {
+    final playback = widget.playback;
+    final stopAt = playback.stopAtTime;
+    if (!playback.playing) return 'Paused';
+    if (playback.timerMinutes == 0 && stopAt == null) return 'Playing';
+    final remaining = formatSleepRemaining(playback.remainingSeconds);
+    final status = stopAt == null
+        ? 'Stopping in $remaining'
+        : 'Stopping at ${_clock(stopAt)} · in $remaining';
+    final fade = playback.gradualFadeMinutes;
+    return fade == null ? status : '$status · fades over the last $fade min';
+  }
+
+  Widget _timerOptionsButton() {
+    final pro = ProFeatures(widget.billing.entitlements);
+    return ListenableBuilder(
+      listenable: pro.changes,
+      builder: (context, _) {
+        final locked = !pro.canUseAdvancedTimer;
+        return IconButton(
+          tooltip: locked ? 'Timer options (Pro)' : 'Timer options',
+          onPressed: locked
+              ? () => PaywallPage.open(context, widget.billing)
+              : () => showTimerOptions(context, widget.playback),
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Icon(
+                Symbols.timer_rounded,
+                size: 26,
+                color: FactoryColors.mist,
+              ),
+              if (locked)
+                const Positioned(
+                  right: -4,
+                  bottom: -4,
+                  child: Icon(
+                    Symbols.lock_rounded,
+                    size: 13,
+                    fill: 1,
+                    color: FactoryColors.mutedInk,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -358,51 +402,14 @@ class _LibraryPageState extends State<LibraryPage> {
     style: Theme.of(context).textTheme.titleSmall,
   );
 
-  static const _heartSlotHeight = 32.0;
-  static const _cardBaseHeight = 152.0;
+  static const _equalizerSlotHeight = 24.0;
+  static const _cardBaseHeight = 144.0;
 
   /// Grows with the system font size so a two-line name still fits above the
   /// volume slider.
   double _cardHeight(BuildContext context) {
     final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
     return _cardBaseHeight * scale.clamp(1.0, 1.6);
-  }
-
-  Widget _heart({
-    required bool filled,
-    required Color color,
-    double size = 22,
-  }) => Icon(
-    Symbols.favorite_rounded,
-    color: color,
-    size: size,
-    fill: filled ? 1 : 0,
-    weight: 400,
-  );
-
-  /// Only the active card has a tappable heart; a favorite that is not active
-  /// shows a small badge instead. The slot keeps the same height either way,
-  /// so icons and labels do not shift when a card is toggled.
-  Widget _heartSlot(Sound sound, {required bool active}) {
-    final favorite = favorites.contains(sound.id);
-    if (active) {
-      return IconButton(
-        visualDensity: VisualDensity.compact,
-        tooltip: favorite ? 'Remove from favorites' : 'Add to favorites',
-        onPressed: () => _toggleFavorite(sound),
-        icon: _heart(
-          filled: favorite,
-          color: favorite ? FactoryColors.ink : FactoryColors.mutedInk,
-        ),
-      );
-    }
-    if (favorite) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 10, right: 10),
-        child: _heart(filled: true, color: FactoryColors.ink, size: 14),
-      );
-    }
-    return const SizedBox.shrink();
   }
 
   Widget _volumeSlider(Sound sound) => Padding(
@@ -424,20 +431,15 @@ class _LibraryPageState extends State<LibraryPage> {
       child: Column(
         children: [
           SizedBox(
-            height: _heartSlotHeight,
-            child: Stack(
-              children: [
-                if (active)
-                  Positioned(
-                    left: 10,
-                    top: 10,
-                    child: EqualizerBars(playing: widget.playback.playing),
-                  ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: _heartSlot(sound, active: active),
-                ),
-              ],
+            height: _equalizerSlotHeight,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: active
+                  ? Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: EqualizerBars(playing: widget.playback.playing),
+                    )
+                  : null,
             ),
           ),
           sound.icon.build(FactoryColors.mist, 34),
@@ -448,101 +450,6 @@ class _LibraryPageState extends State<LibraryPage> {
             child: active ? _volumeSlider(sound) : null,
           ),
         ],
-      ),
-    );
-  }
-
-  List<Sound> get _favoriteSounds =>
-      sounds.where((s) => favorites.contains(s.id)).toList();
-
-  /// Plays every favorite, or pauses/resumes playback once all of them are
-  /// selected.
-  void _onFavoritesPressed(List<Sound> favoriteSounds) {
-    if (favoriteSounds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Start a sound and tap its heart to add it to Favorites.',
-          ),
-        ),
-      );
-    } else if (favoriteSounds.every(widget.playback.isSelected)) {
-      widget.playback.togglePlaying();
-    } else {
-      widget.playback.toggleAll(favoriteSounds);
-    }
-  }
-
-  Widget _favoritesRow() {
-    final favoriteSounds = _favoriteSounds;
-    final empty = favoriteSounds.isEmpty;
-    final active = !empty && favoriteSounds.every(widget.playback.isSelected);
-    final playing = active && widget.playback.playing;
-    return Material(
-      color: active
-          ? FactoryColors.activeSurface
-          : FactoryColors.surfaceElevated,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: active ? FactoryColors.activeOutline : FactoryColors.outline,
-          width: 1.5,
-        ),
-      ),
-      child: InkWell(
-        onTap: () => _onFavoritesPressed(favoriteSounds),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              _heart(
-                filled: !empty,
-                color: empty
-                    ? FactoryColors.mutedInk.withValues(alpha: .6)
-                    : FactoryColors.mist,
-                size: 30,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Favorites',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: empty
-                            ? FactoryColors.mutedInk
-                            : FactoryColors.ink,
-                      ),
-                    ),
-                    Text(
-                      empty
-                          ? 'Start a sound and tap its heart'
-                          : favoriteSounds.map((s) => s.name).join(' · '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: FactoryColors.mutedInk),
-                    ),
-                  ],
-                ),
-              ),
-              if (!empty)
-                Tooltip(
-                  message: playing ? 'Pause favorites' : 'Play favorites',
-                  child: Icon(
-                    playing
-                        ? Symbols.pause_rounded
-                        : Symbols.play_arrow_rounded,
-                    fill: 1,
-                    size: 28,
-                    color: playing ? FactoryColors.ink : FactoryColors.mutedInk,
-                  ),
-                ),
-            ],
-          ),
-        ),
       ),
     );
   }

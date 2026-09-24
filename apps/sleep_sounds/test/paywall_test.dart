@@ -59,7 +59,7 @@ void main() {
     expect(find.text('Set the volume of each sound'), findsOneWidget);
     expect(find.text('No ads'), findsOneWidget);
     expect(
-      find.text('All 17 sounds, favorites and the timer stay free.'),
+      find.text('All 17 sounds, mixing and the timer stay free.'),
       findsOneWidget,
     );
     expect(find.text(r'$3.99 · one-time purchase'), findsOneWidget);

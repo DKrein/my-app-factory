@@ -3,6 +3,7 @@ import 'package:factory_billing/factory_billing.dart';
 import 'package:factory_storage/factory_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sleep_sounds/features/library/equalizer_bars.dart';
 import 'package:sleep_sounds/features/pro/pro_features.dart';
 import 'package:sleep_sounds/main.dart';
 import 'package:factory_ads/factory_ads.dart';
@@ -45,11 +46,14 @@ void main() {
               200,
               scrollable: find.byType(Scrollable).first,
             );
+            await tester.ensureVisible(find.text(name));
+            await tester.pump();
             await tester.tap(find.text(name));
             await tester.pump();
           }
 
           expect(tester.takeException(), isNull);
+          expect(find.byType(EqualizerBars), findsNWidgets(3));
         },
       );
     }

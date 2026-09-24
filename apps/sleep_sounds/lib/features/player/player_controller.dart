@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:factory_audio/factory_audio.dart';
 import 'package:factory_storage/factory_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show TimeOfDay;
 
 import '../../content/sounds.dart';
 import '../mixes/saved_mix.dart';
@@ -21,9 +22,14 @@ class PlaybackController extends ChangeNotifier {
     required this._createGateway,
     this._nowPlaying,
     this._storage,
+    this._now = DateTime.now,
   });
 
   static const _sessionKey = 'last_session_v1';
+  static const _optionsKey = 'timer_options_v1';
+  static const minFadeMinutes = 1;
+  static const maxFadeMinutes = 15;
+  static const maxCustomMinutes = 24 * 60 - 1;
   static const _masterGain = .7;
   static const _rampDuration = Duration(milliseconds: 250);
   static const _dragRamp = Duration(milliseconds: 50);
@@ -35,6 +41,7 @@ class PlaybackController extends ChangeNotifier {
   final AudioGatewayFactory _createGateway;
   final NowPlayingNotifier? _nowPlaying;
   final KeyValueStore? _storage;
+  final DateTime Function() _now;
   final Map<String, ({Sound sound, AudioGateway gateway})> _active = {};
   Timer? _timer;
   bool _timerFading = false;
@@ -43,6 +50,18 @@ class PlaybackController extends ChangeNotifier {
   final Map<String, double> _volumes = {};
   int timerMinutes = defaultSleepMinutes;
   int remainingSeconds = 0;
+  int _totalSeconds = 0;
+
+  /// Fade out over the last [fadeMinutes] instead of the last few seconds.
+  bool gradualFade = false;
+  int fadeMinutes = 5;
+
+  /// The last custom duration the user set, offered again in the options.
+  int customMinutes = 0;
+
+  /// One-shot "stop at" time. While set it replaces the duration.
+  TimeOfDay? stopAtTime;
+  DateTime? _stopAt;
 
   /// Gain of a layer with individual [volume] (0..1) in a mix whose volumes
   /// squared add up to [sumOfSquares].
@@ -121,9 +140,7 @@ class PlaybackController extends ChangeNotifier {
       if (!isSelected(sound)) await toggle(sound);
     }
     final minutes = mix.timerMinutes;
-    if (minutes != null && sleepDurations.any((d) => d.minutes == minutes)) {
-      setTimer(minutes);
-    }
+    if (minutes != null && _isValidTimer(minutes)) setTimer(minutes);
     if (!playing) await togglePlaying();
     _saveSession();
     notifyListeners();
@@ -136,6 +153,7 @@ class PlaybackController extends ChangeNotifier {
   /// Brings back the sounds and timer of the last session, selected but not
   /// playing: the user still has to press play.
   Future<void> restore() async {
+    await _restoreTimerOptions();
     final raw = await _storage?.readString(_sessionKey);
     if (raw == null || _active.isNotEmpty) return;
     try {
@@ -155,13 +173,45 @@ class PlaybackController extends ChangeNotifier {
           _volumes[id] = volume.toDouble().clamp(minVolume, 1.0);
         }
       }
-      if (sleepDurations.any((d) => d.minutes == minutes)) {
-        timerMinutes = minutes;
-      }
+      if (_isValidTimer(minutes)) timerMinutes = minutes;
     } catch (_) {
       return;
     }
     notifyListeners();
+  }
+
+  static bool _isValidTimer(int minutes) =>
+      minutes == 0 || (minutes >= 1 && minutes <= maxCustomMinutes);
+
+  Future<void> _restoreTimerOptions() async {
+    final raw = await _storage?.readString(_optionsKey);
+    if (raw == null) return;
+    try {
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      gradualFade = json['gradualFade'] as bool;
+      fadeMinutes = (json['fadeMinutes'] as int).clamp(
+        minFadeMinutes,
+        maxFadeMinutes,
+      );
+      final custom = json['customMinutes'] as int;
+      if (custom >= 1 && custom <= maxCustomMinutes) customMinutes = custom;
+    } catch (_) {
+      return;
+    }
+    notifyListeners();
+  }
+
+  void _saveTimerOptions() {
+    unawaited(
+      _storage?.writeString(
+        _optionsKey,
+        jsonEncode({
+          'gradualFade': gradualFade,
+          'fadeMinutes': fadeMinutes,
+          'customMinutes': customMinutes,
+        }),
+      ),
+    );
   }
 
   void _saveSession() {
@@ -208,15 +258,6 @@ class PlaybackController extends ChangeNotifier {
     }
   }
 
-  /// Selects every sound in [list] that is not selected yet, or deselects
-  /// them all if they already are.
-  Future<void> toggleAll(List<Sound> list) async {
-    final allSelected = list.every(isSelected);
-    for (final sound in list) {
-      if (allSelected || !isSelected(sound)) await toggle(sound);
-    }
-  }
-
   Future<void> togglePlaying() async {
     if (_active.isEmpty) return;
     if (playing) {
@@ -238,14 +279,83 @@ class PlaybackController extends ChangeNotifier {
   void setTimer(int minutes) {
     _cancelTimerFade();
     _timer?.cancel();
+    _stopAt = null;
+    stopAtTime = null;
     timerMinutes = minutes;
     _saveSession();
     remainingSeconds = minutes * 60;
+    _totalSeconds = remainingSeconds;
     notifyListeners();
     if (playing && minutes > 0) {
       _startTicking();
     }
   }
+
+  /// A duration outside the carousel; it is remembered for next time.
+  void setCustomTimer(int minutes) {
+    customMinutes = minutes.clamp(1, maxCustomMinutes);
+    _saveTimerOptions();
+    setTimer(customMinutes);
+  }
+
+  /// Stops at the next [time] on the clock: today if it is still ahead,
+  /// tomorrow otherwise. It applies once; the chosen duration is kept.
+  void setStopAt(TimeOfDay time) {
+    _cancelTimerFade();
+    _timer?.cancel();
+    final now = _now();
+    _stopAt = _nextOccurrence(time, now);
+    stopAtTime = time;
+    remainingSeconds = _stopAt!.difference(now).inSeconds;
+    _totalSeconds = remainingSeconds;
+    notifyListeners();
+    if (playing) _startTicking();
+  }
+
+  /// Seconds from now until the next [time] on the clock.
+  int secondsUntilNext(TimeOfDay time) {
+    final now = _now();
+    return _nextOccurrence(time, now).difference(now).inSeconds;
+  }
+
+  static DateTime _nextOccurrence(TimeOfDay time, DateTime now) {
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
+    return today.isAfter(now) ? today : today.add(const Duration(days: 1));
+  }
+
+  void setGradualFade(bool enabled) {
+    gradualFade = enabled;
+    _cancelTimerFade();
+    _saveTimerOptions();
+    notifyListeners();
+  }
+
+  /// Live while the slider moves; call [commitTimerOptions] on release.
+  void setFadeMinutes(int minutes) {
+    fadeMinutes = minutes.clamp(minFadeMinutes, maxFadeMinutes);
+    _cancelTimerFade();
+    notifyListeners();
+  }
+
+  void commitTimerOptions() => _saveTimerOptions();
+
+  /// Minutes the final fade covers with the current timer, or null when the
+  /// gradual fade is off. It cannot outlast the timer itself.
+  int? get gradualFadeMinutes {
+    if (!gradualFade) return null;
+    if (_totalSeconds <= 0) return fadeMinutes;
+    return math.min(fadeMinutes, (_totalSeconds / 60).ceil());
+  }
+
+  int get _fadeSeconds => gradualFade
+      ? math.min(fadeMinutes * 60, _totalSeconds)
+      : _timerFadeDuration.inSeconds;
 
   Future<void> _start(
     ({Sound sound, AudioGateway gateway}) layer, {
@@ -302,6 +412,12 @@ class PlaybackController extends ChangeNotifier {
   }
 
   void _beginCountdown() {
+    final stopAt = _stopAt;
+    if (stopAt != null && !_now().isBefore(stopAt)) {
+      _stopAt = null;
+      stopAtTime = null;
+      remainingSeconds = 0;
+    }
     if (remainingSeconds == 0) {
       setTimer(timerMinutes);
     } else {
@@ -319,8 +435,9 @@ class PlaybackController extends ChangeNotifier {
 
   void _beginTimerFade() {
     _timerFading = true;
+    final duration = Duration(seconds: remainingSeconds);
     for (final layer in _active.values) {
-      unawaited(layer.gateway.fadeTo(0, _timerFadeDuration));
+      unawaited(layer.gateway.fadeTo(0, duration));
     }
   }
 
@@ -335,14 +452,21 @@ class PlaybackController extends ChangeNotifier {
   }
 
   void _tick() {
-    if (remainingSeconds > 1) {
+    final stopAt = _stopAt;
+    if (stopAt != null) {
+      remainingSeconds = math.max(0, stopAt.difference(_now()).inSeconds);
+    } else if (remainingSeconds > 0) {
       remainingSeconds--;
-      if (remainingSeconds == _timerFadeDuration.inSeconds) _beginTimerFade();
+    }
+    if (remainingSeconds > 0) {
+      if (!_timerFading && remainingSeconds <= _fadeSeconds) _beginTimerFade();
       notifyListeners();
       return;
     }
     _stopTicking();
     _timerFading = false;
+    _stopAt = null;
+    stopAtTime = null;
     remainingSeconds = 0;
     playing = false;
     notifyListeners();

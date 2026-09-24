@@ -1,5 +1,6 @@
 import 'package:factory_audio/factory_audio.dart';
 import 'package:factory_storage/factory_storage.dart';
+import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sleep_sounds/content/sounds.dart';
 import 'package:sleep_sounds/features/mixes/saved_mix.dart';
@@ -89,7 +90,7 @@ void main() {
       final storage = MemoryKeyValueStore();
       await storage.writeString(
         sessionKey,
-        '{"soundIds":["rain","gone"],"timerMinutes":7}',
+        '{"soundIds":["rain","gone"],"timerMinutes":5000}',
       );
       final restored = controllerWith(storage);
       await restored.restore();
@@ -206,6 +207,306 @@ void main() {
         playback.dispose();
       },
     );
+  });
+
+  group('timer options', () {
+    late PlaybackController timed;
+    late DateTime Function() fakeNow;
+    late MemoryKeyValueStore store;
+
+    // 22:00 on 24 Sep 2026, moving with the test's fake clock.
+    void setUpTimed(WidgetTester tester) {
+      final start = tester.binding.clock.now();
+      fakeNow = () => DateTime(
+        2026,
+        9,
+        24,
+        22,
+      ).add(tester.binding.clock.now().difference(start));
+      store = MemoryKeyValueStore();
+      timed = PlaybackController(
+        createGateway: createGateway,
+        storage: store,
+        now: fakeNow,
+      );
+    }
+
+    Duration lastFade() => gateways.single.fades.last.duration;
+
+    group('gradual fade', () {
+      testWidgets('starts N minutes before the end and covers them', (
+        tester,
+      ) async {
+        setUpTimed(tester);
+        timed.setGradualFade(true);
+        timed.setFadeMinutes(5);
+        await timed.toggle(rain);
+        timed.setTimer(15);
+
+        await tester.pump(const Duration(seconds: 599));
+        expect(gateways.single.fades, hasLength(1));
+
+        await tester.pump(const Duration(seconds: 1));
+        expect(gateways.single.fades.last, (
+          volume: 0.0,
+          duration: const Duration(minutes: 5),
+        ));
+        expect(timed.playing, isTrue);
+
+        await tester.pump(const Duration(minutes: 5));
+        expect(timed.playing, isFalse);
+        timed.dispose();
+      });
+
+      testWidgets(
+        'is off until the user turns it on: four seconds at the end',
+        (tester) async {
+          setUpTimed(tester);
+          await timed.toggle(rain);
+          timed.setTimer(15);
+
+          await tester.pump(const Duration(minutes: 14, seconds: 55));
+          expect(gateways.single.fades, hasLength(1));
+
+          await tester.pump(const Duration(seconds: 1));
+          expect(lastFade(), const Duration(seconds: 4));
+          timed.dispose();
+        },
+      );
+
+      testWidgets('cannot outlast a shorter timer', (tester) async {
+        setUpTimed(tester);
+        timed.setGradualFade(true);
+        timed.setFadeMinutes(15);
+        await timed.toggle(rain);
+        timed.setTimer(1);
+
+        expect(timed.gradualFadeMinutes, 1);
+
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(lastFade(), const Duration(seconds: 59));
+        timed.dispose();
+      });
+
+      testWidgets('turning it off mid-fade brings the sound back', (
+        tester,
+      ) async {
+        setUpTimed(tester);
+        timed.setGradualFade(true);
+        await timed.toggle(rain);
+        timed.setTimer(15);
+        await tester.pump(const Duration(seconds: 600));
+        expect(lastFade(), const Duration(minutes: 5));
+
+        timed.setGradualFade(false);
+
+        expect(gateways.single.fades.last, (
+          volume: PlaybackController.mixGain(1, 1),
+          duration: const Duration(milliseconds: 250),
+        ));
+        timed.dispose();
+      });
+
+      test('the length stays between 1 and 15 minutes', () {
+        final c = PlaybackController(createGateway: createGateway);
+
+        c.setFadeMinutes(0);
+        expect(c.fadeMinutes, 1);
+        c.setFadeMinutes(99);
+        expect(c.fadeMinutes, 15);
+        expect(c.gradualFadeMinutes, isNull);
+      });
+    });
+
+    group('custom duration', () {
+      testWidgets('counts down like any other and is remembered', (
+        tester,
+      ) async {
+        setUpTimed(tester);
+        await timed.toggle(rain);
+
+        timed.setCustomTimer(150);
+        await tester.pump(const Duration(seconds: 10));
+
+        expect(timed.timerMinutes, 150);
+        expect(timed.customMinutes, 150);
+        expect(timed.remainingSeconds, 150 * 60 - 10);
+        timed.dispose();
+      });
+
+      test('is kept between 1 minute and 23 h 59 min', () {
+        final c = PlaybackController(createGateway: createGateway);
+
+        c.setCustomTimer(0);
+        expect(c.timerMinutes, 1);
+        c.setCustomTimer(99999);
+        expect(c.timerMinutes, 23 * 60 + 59);
+      });
+    });
+
+    group('stop at', () {
+      testWidgets('counts to the time on the clock and keeps the duration', (
+        tester,
+      ) async {
+        setUpTimed(tester);
+        await timed.toggle(rain);
+
+        timed.setStopAt(const TimeOfDay(hour: 6, minute: 30));
+
+        expect(timed.remainingSeconds, (8 * 60 + 30) * 60);
+        expect(timed.stopAtTime, const TimeOfDay(hour: 6, minute: 30));
+        expect(timed.timerMinutes, defaultSleepMinutes);
+        timed.dispose();
+      });
+
+      testWidgets('a time that already passed today means tomorrow', (
+        tester,
+      ) async {
+        setUpTimed(tester);
+
+        expect(
+          timed.secondsUntilNext(const TimeOfDay(hour: 21, minute: 0)),
+          23 * 3600,
+        );
+        expect(
+          timed.secondsUntilNext(const TimeOfDay(hour: 22, minute: 0)),
+          24 * 3600,
+        );
+        expect(
+          timed.secondsUntilNext(const TimeOfDay(hour: 22, minute: 1)),
+          60,
+        );
+        timed.dispose();
+      });
+
+      testWidgets('follows the clock, not the count of ticks', (tester) async {
+        setUpTimed(tester);
+        await timed.toggle(rain);
+        timed.setStopAt(const TimeOfDay(hour: 22, minute: 10));
+
+        await tester.pump(const Duration(minutes: 4));
+
+        expect(timed.remainingSeconds, 6 * 60);
+        timed.dispose();
+      });
+
+      testWidgets('stops at the time, then goes back to the chosen duration', (
+        tester,
+      ) async {
+        setUpTimed(tester);
+        await timed.toggle(rain);
+        timed.setStopAt(const TimeOfDay(hour: 22, minute: 1));
+
+        await tester.pump(const Duration(seconds: 61));
+
+        expect(timed.playing, isFalse);
+        expect(timed.stopAtTime, isNull);
+
+        await timed.togglePlaying();
+
+        expect(timed.remainingSeconds, defaultSleepMinutes * 60);
+        timed.dispose();
+      });
+
+      testWidgets('picking a duration cancels it', (tester) async {
+        setUpTimed(tester);
+        await timed.toggle(rain);
+        timed.setStopAt(const TimeOfDay(hour: 6, minute: 30));
+
+        timed.setTimer(30);
+
+        expect(timed.stopAtTime, isNull);
+        expect(timed.remainingSeconds, 30 * 60);
+        timed.dispose();
+      });
+
+      testWidgets('resuming after the time has passed starts a fresh timer', (
+        tester,
+      ) async {
+        setUpTimed(tester);
+        await timed.toggle(rain);
+        timed.setStopAt(const TimeOfDay(hour: 22, minute: 10));
+        await timed.togglePlaying();
+
+        await tester.pump(const Duration(minutes: 15));
+        await timed.togglePlaying();
+
+        expect(timed.stopAtTime, isNull);
+        expect(timed.remainingSeconds, defaultSleepMinutes * 60);
+        expect(timed.playing, isTrue);
+        timed.dispose();
+      });
+
+      testWidgets('the gradual fade also works with a stop-at time', (
+        tester,
+      ) async {
+        setUpTimed(tester);
+        timed.setGradualFade(true);
+        timed.setFadeMinutes(2);
+        await timed.toggle(rain);
+        timed.setStopAt(const TimeOfDay(hour: 22, minute: 10));
+
+        await tester.pump(const Duration(minutes: 8));
+
+        expect(lastFade(), const Duration(minutes: 2));
+        timed.dispose();
+      });
+    });
+
+    group('storage', () {
+      testWidgets('the fade options and the custom duration come back', (
+        tester,
+      ) async {
+        setUpTimed(tester);
+        timed.setGradualFade(true);
+        timed.setFadeMinutes(8);
+        timed.commitTimerOptions();
+        timed.setCustomTimer(150);
+        timed.dispose();
+
+        final restored = PlaybackController(
+          createGateway: createGateway,
+          storage: store,
+        );
+        await restored.restore();
+
+        expect(restored.gradualFade, isTrue);
+        expect(restored.fadeMinutes, 8);
+        expect(restored.customMinutes, 150);
+        expect(restored.timerMinutes, 150);
+      });
+
+      testWidgets('a stop-at time is not remembered', (tester) async {
+        setUpTimed(tester);
+        await timed.toggle(rain);
+        timed.setStopAt(const TimeOfDay(hour: 6, minute: 30));
+        timed.dispose();
+
+        final restored = PlaybackController(
+          createGateway: createGateway,
+          storage: store,
+        );
+        await restored.restore();
+
+        expect(restored.stopAtTime, isNull);
+        expect(restored.timerMinutes, defaultSleepMinutes);
+      });
+
+      test('broken options are ignored', () async {
+        final broken = MemoryKeyValueStore();
+        await broken.writeString('timer_options_v1', 'nope');
+        final c = PlaybackController(
+          createGateway: createGateway,
+          storage: broken,
+        );
+
+        await c.restore();
+
+        expect(c.gradualFade, isFalse);
+        expect(c.fadeMinutes, 5);
+      });
+    });
   });
 
   group('mixes', () {

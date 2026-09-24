@@ -176,7 +176,7 @@ class _PaywallPageState extends State<PaywallPage> {
             ),
           const SizedBox(height: 16),
           const Text(
-            'All 17 sounds, favorites and the timer stay free.',
+            'All 17 sounds, mixing and the timer stay free.',
             style: TextStyle(color: FactoryColors.mutedInk),
           ),
           const SizedBox(height: 32),

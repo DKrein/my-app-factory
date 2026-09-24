@@ -9,10 +9,12 @@ import 'sleep_duration.dart';
 class DurationCarousel extends StatefulWidget {
   const DurationCarousel({
     super.key,
+    required this.durations,
     required this.selectedMinutes,
     required this.onSelected,
   });
 
+  final List<SleepDuration> durations;
   final int selectedMinutes;
   final ValueChanged<int> onSelected;
 
@@ -28,11 +30,12 @@ class _DurationCarouselState extends State<DurationCarousel> {
     initialPage: _indexOf(widget.selectedMinutes),
   );
   late double _page = _controller.initialPage.toDouble();
+  bool _syncing = false;
 
   int _indexOf(int minutes) {
-    final index = sleepDurations.indexWhere((d) => d.minutes == minutes);
+    final index = widget.durations.indexWhere((d) => d.minutes == minutes);
     return index == -1
-        ? sleepDurations.indexWhere((d) => d.minutes == defaultSleepMinutes)
+        ? widget.durations.indexWhere((d) => d.minutes == defaultSleepMinutes)
         : index;
   }
 
@@ -52,12 +55,18 @@ class _DurationCarouselState extends State<DurationCarousel> {
     super.didUpdateWidget(oldWidget);
     final targetIndex = _indexOf(widget.selectedMinutes);
     if (targetIndex != _page.round() &&
-        widget.selectedMinutes != oldWidget.selectedMinutes) {
-      _controller.animateToPage(
-        targetIndex,
-        duration: const Duration(milliseconds: 240),
-        curve: Curves.easeOut,
-      );
+        (widget.selectedMinutes != oldWidget.selectedMinutes ||
+            widget.durations.length != oldWidget.durations.length)) {
+      // A change that came from outside must not be reported back as if the
+      // user had swiped through the items in between.
+      _syncing = true;
+      _controller
+          .animateToPage(
+            targetIndex,
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOut,
+          )
+          .whenComplete(() => _syncing = false);
     }
   }
 
@@ -79,8 +88,10 @@ class _DurationCarouselState extends State<DurationCarousel> {
   @override
   Widget build(BuildContext context) => PageView.builder(
     controller: _controller,
-    itemCount: sleepDurations.length,
-    onPageChanged: (index) => widget.onSelected(sleepDurations[index].minutes),
+    itemCount: widget.durations.length,
+    onPageChanged: (index) {
+      if (!_syncing) widget.onSelected(widget.durations[index].minutes);
+    },
     itemBuilder: (context, index) {
       final distance = (_page - index).abs();
       final t = (1 - distance).clamp(0.0, 1.0);
@@ -101,7 +112,7 @@ class _DurationCarouselState extends State<DurationCarousel> {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                sleepDurations[index].label,
+                widget.durations[index].label,
                 style: TextStyle(
                   color: color,
                   fontSize: fontSize,

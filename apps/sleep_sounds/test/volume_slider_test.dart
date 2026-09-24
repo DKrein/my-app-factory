@@ -47,6 +47,11 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  final cardLock = find.descendant(
+    of: find.byType(GridView),
+    matching: find.byIcon(Symbols.lock_rounded),
+  );
+
   Finder card(String name) =>
       find.descendant(of: find.byType(GridView), matching: find.text(name));
 
@@ -54,7 +59,7 @@ void main() {
     await pumpApp(tester, pro: true);
 
     expect(find.byType(Slider), findsNothing);
-    expect(find.byIcon(Symbols.lock_rounded), findsNothing);
+    expect(cardLock, findsNothing);
   });
 
   group('with Pro', () {
@@ -67,7 +72,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(Slider), findsOneWidget);
-      expect(find.byIcon(Symbols.lock_rounded), findsNothing);
+      expect(cardLock, findsNothing);
       expect(gateways.single.volume, closeTo(.7, 1e-9));
 
       await tester.drag(find.byType(Slider), const Offset(-40, 0));
@@ -115,7 +120,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(Slider), findsNothing);
-      expect(find.byIcon(Symbols.lock_rounded), findsOneWidget);
+      expect(cardLock, findsOneWidget);
     });
 
     testWidgets('tapping the lock opens the paywall and keeps the sound', (
@@ -126,7 +131,7 @@ void main() {
       await tester.pump();
       expect(find.byType(PaywallPage), findsNothing);
 
-      await tester.tap(find.byIcon(Symbols.lock_rounded));
+      await tester.tap(cardLock);
       await tester.pumpAndSettle();
 
       expect(find.byType(PaywallPage), findsOneWidget);
@@ -141,7 +146,7 @@ void main() {
       await pumpApp(tester, pro: false);
       await tester.tap(card('Rain'));
       await tester.pump();
-      await tester.tap(find.byIcon(Symbols.lock_rounded));
+      await tester.tap(cardLock);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Get Pro'));
@@ -149,7 +154,7 @@ void main() {
 
       expect(find.byType(PaywallPage), findsNothing);
       expect(find.byType(Slider), findsOneWidget);
-      expect(find.byIcon(Symbols.lock_rounded), findsNothing);
+      expect(cardLock, findsNothing);
     });
 
     testWidgets('volumes stay at full without Pro', (tester) async {

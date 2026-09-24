@@ -17,6 +17,38 @@ const sleepDurations = <SleepDuration>[
 
 const defaultSleepMinutes = 60;
 
+/// Stands for the "stop at" item of the carousel; it is not a real duration.
+const stopAtMinutes = -1;
+
+/// `'2h 30m'`, `'5h'` or `'45m'`, for a custom duration.
+String customDurationLabel(int minutes) {
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+  if (hours == 0) return '${rest}m';
+  if (rest == 0) return '${hours}h';
+  return '${hours}h ${rest}m';
+}
+
+/// What the carousel offers right now: the presets, plus the custom duration
+/// (in its place among them) or the "stop at" time (last) when one is active.
+List<SleepDuration> sleepDurationChoices({
+  required int timerMinutes,
+  String? stopAtLabel,
+}) {
+  final choices = [...sleepDurations];
+  if (timerMinutes > 0 && !choices.any((d) => d.minutes == timerMinutes)) {
+    final next = choices.indexWhere((d) => d.minutes > timerMinutes);
+    choices.insert(
+      next == -1 ? choices.length : next,
+      SleepDuration(timerMinutes, customDurationLabel(timerMinutes)),
+    );
+  }
+  if (stopAtLabel != null) {
+    choices.add(SleepDuration(stopAtMinutes, stopAtLabel));
+  }
+  return choices;
+}
+
 /// Formats remaining sleep-timer seconds for display: `'11h 59m'` at or above
 /// one hour, `'M:SS'` below it.
 String formatSleepRemaining(int totalSeconds) {

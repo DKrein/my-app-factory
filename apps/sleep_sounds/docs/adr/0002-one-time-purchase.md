@@ -16,7 +16,7 @@ O Sleepy Capy ainda não foi publicado, então não há compradores nem SKU lega
 
 | Grátis | Pro |
 | --- | --- |
-| Os 17 sons, mixagem, timer (Off, 15m a 12h), favoritos, lembrete de dormir, restaurar a última sessão, tema atual | Volume individual por som, mixes salvos ilimitados, timer com fade gradual, duração personalizada e "parar às HH:MM", temas extras, sem anúncios |
+| Os 17 sons, mixagem, timer (Off, 15m a 12h), 1 mix salvo, lembrete de dormir, restaurar a última sessão, tema atual | Volume individual por som, mixes salvos ilimitados, timer com fade gradual, duração personalizada e "parar às HH:MM", temas extras, sem anúncios |
 | Banner apenas na grade e em Configurações | Nenhum SDK de anúncio inicializado |
 | 1 mix salvo | Mixes salvos ilimitados |
 

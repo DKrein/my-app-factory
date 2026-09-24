@@ -23,6 +23,9 @@ class ProFeatures {
 
   bool get canSetIndividualVolume => isPro;
 
+  /// Gradual fade, custom duration and "stop at".
+  bool get canUseAdvancedTimer => isPro;
+
   /// Whether one more mix may be saved when [savedCount] already are.
   bool canSaveMix(int savedCount) => isPro || savedCount < freeMixLimit;
 }
