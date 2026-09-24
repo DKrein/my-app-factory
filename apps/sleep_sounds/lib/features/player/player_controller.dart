@@ -46,7 +46,7 @@ class PlaybackController extends ChangeNotifier {
   /// same gain are 10*log10(n) dB louder (+7 dB with 5 sounds) and their peaks
   /// approach clipping. Scaling each layer by 1/sqrt(n) keeps the mix power
   /// equal to the average single sound, and one sound stays at [_masterGain].
-  /// See docs/adr/0001-mix-headroom.md.
+  /// See apps/sleep_sounds/docs/adr/0001-mix-headroom.md.
   @visibleForTesting
   static double gainFor(int count) =>
       _masterGain / math.sqrt(math.max(1, count));
