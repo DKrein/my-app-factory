@@ -93,18 +93,20 @@ class _SleepSoundsAppState extends State<SleepSoundsApp> {
   @override
   void initState() {
     super.initState();
+    _storage = widget.storage ?? MemoryKeyValueStore();
     _playback = PlaybackController(
       createGateway:
           widget.createGateway ??
           ({required ownsAudioSession}) =>
               JustAudioGateway(ownsAudioSession: ownsAudioSession),
       nowPlaying: widget.nowPlaying,
+      storage: _storage,
     );
+    unawaited(_playback.restore());
     widget.nowPlaying?.bindTransport(
       onPlay: _playback.togglePlaying,
       onPause: _playback.togglePlaying,
     );
-    _storage = widget.storage ?? MemoryKeyValueStore();
     _ads = widget.ads ?? PreviewAdsGateway(initialized: true);
     _billing =
         widget.billing ??

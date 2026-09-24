@@ -71,6 +71,39 @@ void main() {
     expect(find.text('Preview Ad [banner_home]'), findsOneWidget);
   });
 
+  testWidgets('opens with the last session selected but not playing', (
+    tester,
+  ) async {
+    final storage = MemoryKeyValueStore();
+    await storage.writeString(
+      'last_session_v1',
+      '{"soundIds":["rain"],"timerMinutes":180}',
+    );
+
+    await tester.pumpWidget(
+      SleepSoundsApp(
+        storage: storage,
+        createGateway: createGateway,
+        ads: PreviewAdsGateway(initialized: true),
+        billing: FakeBillingGateway(catalog: sleepSoundsCatalog),
+      ),
+    );
+    await pumpPastSplash(tester);
+
+    expect(find.text('Paused'), findsOneWidget);
+    expect(find.text('3h'), findsOneWidget);
+    expect(playingAssets, isEmpty);
+
+    await tester.tap(find.byTooltip('Play'));
+    await tester.pump();
+
+    expect(playingAssets, hasLength(1));
+    expect(find.textContaining('Stopping in 3h 00m'), findsOneWidget);
+
+    await tester.tap(find.text('Rain'));
+    await tester.pump();
+  });
+
   testWidgets('Favorites persist and the Favorites card plays them all', (
     tester,
   ) async {

@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:factory_audio/factory_audio.dart';
+import 'package:factory_storage/factory_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../content/sounds.dart';
@@ -14,8 +16,13 @@ typedef AudioGatewayFactory = AudioGateway Function({
 /// Plays any number of sounds at once, with one sleep timer for all of them.
 /// Each playing sound holds its own [AudioGateway], disposed when it stops.
 class PlaybackController extends ChangeNotifier {
-  PlaybackController({required this._createGateway, this._nowPlaying});
+  PlaybackController({
+    required this._createGateway,
+    this._nowPlaying,
+    this._storage,
+  });
 
+  static const _sessionKey = 'last_session_v1';
   static const _masterGain = .7;
   static const _rampDuration = Duration(milliseconds: 250);
   static const _fadeInDuration = Duration(milliseconds: 1500);
@@ -24,6 +31,7 @@ class PlaybackController extends ChangeNotifier {
 
   final AudioGatewayFactory _createGateway;
   final NowPlayingNotifier? _nowPlaying;
+  final KeyValueStore? _storage;
   final Map<String, ({Sound sound, AudioGateway gateway})> _active = {};
   Timer? _timer;
   bool _timerFading = false;
@@ -49,6 +57,42 @@ class PlaybackController extends ChangeNotifier {
 
   bool isSelected(Sound sound) => _active.containsKey(sound.id);
 
+  /// Brings back the sounds and timer of the last session, selected but not
+  /// playing: the user still has to press play.
+  Future<void> restore() async {
+    final raw = await _storage?.readString(_sessionKey);
+    if (raw == null || _active.isNotEmpty) return;
+    try {
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      final ids = (json['soundIds'] as List).cast<String>();
+      final minutes = json['timerMinutes'] as int;
+      for (final sound in sounds.where((s) => ids.contains(s.id))) {
+        _active[sound.id] = (
+          sound: sound,
+          gateway: _createGateway(ownsAudioSession: _active.isEmpty),
+        );
+      }
+      if (sleepDurations.any((d) => d.minutes == minutes)) {
+        timerMinutes = minutes;
+      }
+    } catch (_) {
+      return;
+    }
+    notifyListeners();
+  }
+
+  void _saveSession() {
+    unawaited(
+      _storage?.writeString(
+        _sessionKey,
+        jsonEncode({
+          'soundIds': _active.keys.toList(),
+          'timerMinutes': timerMinutes,
+        }),
+      ),
+    );
+  }
+
   /// Selects [sound] (resuming everything selected if paused), or deselects
   /// just that one if it is already selected.
   Future<void> toggle(Sound sound) async {
@@ -62,6 +106,7 @@ class PlaybackController extends ChangeNotifier {
       gateway: _createGateway(ownsAudioSession: wasEmpty),
     );
     _active[sound.id] = layer;
+    _saveSession();
     playing = true;
     if (wasPlaying) _rebalance(except: sound.id);
     notifyListeners();
@@ -110,6 +155,7 @@ class PlaybackController extends ChangeNotifier {
     _cancelTimerFade();
     _timer?.cancel();
     timerMinutes = minutes;
+    _saveSession();
     remainingSeconds = minutes * 60;
     notifyListeners();
     if (playing && minutes > 0) {
@@ -138,6 +184,7 @@ class PlaybackController extends ChangeNotifier {
 
   Future<void> _deselect(Sound sound) async {
     final layer = _active.remove(sound.id)!;
+    _saveSession();
     if (_active.isEmpty) {
       playing = false;
       _stopTicking();

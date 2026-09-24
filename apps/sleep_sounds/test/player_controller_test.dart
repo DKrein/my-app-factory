@@ -1,4 +1,5 @@
 import 'package:factory_audio/factory_audio.dart';
+import 'package:factory_storage/factory_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sleep_sounds/content/sounds.dart';
 import 'package:sleep_sounds/features/player/player_controller.dart';
@@ -38,6 +39,69 @@ void main() {
     expect(gateways.last.playingAsset, crickets.asset);
 
     playback.dispose();
+  });
+
+  group('last session', () {
+    const sessionKey = 'last_session_v1';
+
+    PlaybackController controllerWith(KeyValueStore storage) =>
+        PlaybackController(createGateway: createGateway, storage: storage);
+
+    test('sounds and timer are restored selected, not playing', () async {
+      final storage = MemoryKeyValueStore();
+      final first = controllerWith(storage);
+      await first.toggle(rain);
+      await first.toggle(crickets);
+      first.setTimer(180);
+      first.dispose();
+      gateways.clear();
+
+      final restored = controllerWith(storage);
+      await restored.restore();
+
+      expect(restored.isSelected(rain), isTrue);
+      expect(restored.isSelected(crickets), isTrue);
+      expect(restored.timerMinutes, 180);
+      expect(restored.playing, isFalse);
+      expect(gateways.map((g) => g.playingAsset), [null, null]);
+
+      await restored.togglePlaying();
+
+      expect(gateways.map((g) => g.playingAsset), [rain.asset, crickets.asset]);
+      restored.dispose();
+    });
+
+    test('deselecting everything is remembered too', () async {
+      final storage = MemoryKeyValueStore();
+      final first = controllerWith(storage);
+      await first.toggle(rain);
+      await first.toggle(rain);
+      first.dispose();
+
+      final restored = controllerWith(storage);
+      await restored.restore();
+
+      expect(restored.hasSounds, isFalse);
+    });
+
+    test('unknown sounds, bad timer and corrupt data are ignored', () async {
+      final storage = MemoryKeyValueStore();
+      await storage.writeString(
+        sessionKey,
+        '{"soundIds":["rain","gone"],"timerMinutes":7}',
+      );
+      final restored = controllerWith(storage);
+      await restored.restore();
+
+      expect(restored.isSelected(rain), isTrue);
+      expect(restored.timerMinutes, defaultSleepMinutes);
+
+      await storage.writeString(sessionKey, 'not json');
+      final corrupt = controllerWith(storage);
+      await corrupt.restore();
+
+      expect(corrupt.hasSounds, isFalse);
+    });
   });
 
   group('fades', () {
