@@ -9,7 +9,7 @@
 - [x] Escolher o app piloto: Sleep Sounds.
 - [x] Definir o package namespace Android: sempre `com.douglaskrein.[app_name]`.
 - [ ] Criar a conta de desenvolvedor no Google Play.
-- [ ] Publicar a política de privacidade em uma URL pública.
+- [ ] Publicar a política de privacidade em uma URL pública (existe uma versão sem anúncios no site do Sleep Sounds; ela precisa ser trocada pelo texto de `apps/sleep_sounds/docs/privacy-policy.md`).
 
 **Saída:** documentos revisados e decisões pendentes resolvidas. Não há código nesta fase.
 
@@ -47,7 +47,7 @@ O app está completo em código. O que falta é de conta e de loja; o estado de 
 - [x] Ícone, splash nativa e inglês/português;
 - [x] Inventário de dados e checklist da loja (`data-inventory.md`, `store-checklist.md`) e roteiro de teste em aparelho (`manual-test-plan.md`);
 - [ ] Decidir o `applicationId` (permanente depois do envio), criar a chave de envio e os IDs reais do AdMob;
-- [ ] Política de privacidade no ar, com as seções de anúncios e compras;
+- [ ] Política de privacidade no ar, com as seções de anúncios e compras (rascunho pronto em `docs/privacy-policy.md`; o texto do site ainda é o antigo);
 - [ ] Capturas de tela e arte final do ícone (hoje provisórios);
 - [ ] Rodar o roteiro de teste em aparelho e a compra na faixa interna;
 - [ ] Teste fechado com 12 testadores por 14 dias (conta pessoal nova) e envio para produção.

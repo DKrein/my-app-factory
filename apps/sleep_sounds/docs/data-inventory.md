@@ -90,7 +90,7 @@ O Pro **não** é gravado no aparelho: é perguntado à Play a cada abertura (re
 
 ## O que a política de privacidade precisa dizer
 
-Confira o rascunho que você tem contra esta lista (o rascunho ainda não está no repositório):
+O texto novo, em EN e PT, está em `privacy-policy.md`. Ele cobre esta lista; confira contra ela:
 
 1. Quem é o desenvolvedor e como falar com ele (`contact@douglaskrein.com`).
 2. Que não há conta nem coleta de dados pelo app; o que o usuário cria fica no aparelho.

@@ -44,7 +44,7 @@ Idioma padrão: **Inglês (en-US)**. Acrescente **Português (Brasil, pt-BR)**.
 | ⬜ | Capturas de tela (2 a 8, celular) | Ver abaixo |
 | ⬜ | E-mail de contato | `contact@douglaskrein.com` |
 | ⬜ | Site (opcional) | `douglaskrein.com` (e o `app-ads.txt` nele) |
-| ⬜ | URL da política de privacidade | `https://douglaskrein.com/projects/sleep-sounds/privacy-policy` (a página tem de estar no ar antes de enviar) |
+| ⬜ | URL da política de privacidade | `https://douglaskrein.com/projects/sleep-sounds/privacy-policy`. **O texto que está lá hoje é a versão sem anúncios e diz que o app não usa ID de publicidade: está errado para este app.** Substitua pelo de `privacy-policy.md` (EN e PT) antes de enviar |
 
 **Categoria (decisão sua):** "Saúde e fitness" descreve melhor um app de sono, mas obriga a preencher a declaração de apps de saúde (o app não coleta dados de saúde, então é rápido). "Música e áudio" tem menos formulário. Recomendo **Saúde e fitness** se você aceitar a declaração, senão Música e áudio.
 
@@ -144,7 +144,7 @@ Para o português, refaça com o aparelho em português. Posso gerar essas image
 
 | | Item | Resposta proposta |
 | --- | --- | --- |
-| ⬜ | Política de privacidade | A URL acima |
+| ⬜ | Política de privacidade | A URL acima, já com o texto novo (`privacy-policy.md`) |
 | ⬜ | Anúncios | **Sim**, o app contém anúncios (banner do AdMob, sem interstitial nem rewarded) |
 | ⬜ | Acesso ao app | Sem restrição, sem login |
 | ⬜ | Público-alvo e conteúdo | **18 anos ou mais**. **Não** é voltado para crianças, e não entra no programa Em Família |
