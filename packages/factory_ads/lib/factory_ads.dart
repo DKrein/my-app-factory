@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:factory_core/factory_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -88,12 +89,7 @@ final class CustomAdsPolicy implements AdsPolicy {
 }
 
 /// Simplified consent status for user privacy regulations (GDPR, LGPD, etc.).
-enum AdConsentStatus {
-  unknown,
-  required,
-  notRequired,
-  obtained,
-}
+enum AdConsentStatus { unknown, required, notRequired, obtained }
 
 /// Boundary for Ad operations. Keeps third-party SDKs isolated.
 abstract interface class AdsGateway {
@@ -105,6 +101,7 @@ abstract interface class AdsGateway {
     required AdPlacement placement,
     required AdsPolicy policy,
     Widget? fallback,
+    ValueChanged<bool>? onLoadedChanged,
   });
 
   Future<bool> showInterstitial({
@@ -136,18 +133,14 @@ final class PreviewAdsGateway implements AdsGateway {
     required AdPlacement placement,
     required AdsPolicy policy,
     Widget? fallback,
+    ValueChanged<bool>? onLoadedChanged,
   }) {
     if (!policy.canShow(placement)) {
       return fallback ?? const SizedBox.shrink();
     }
-    return Container(
-      height: 50,
-      color: const Color(0x3300FF00),
-      alignment: Alignment.center,
-      child: Text(
-        'Preview Ad [${placement.id}]',
-        style: const TextStyle(fontSize: 12, color: Colors.white70),
-      ),
+    return _PreviewBanner(
+      placementId: placement.id,
+      onLoadedChanged: onLoadedChanged,
     );
   }
 
@@ -224,6 +217,7 @@ final class GoogleMobileAdsGateway implements AdsGateway {
     required AdPlacement placement,
     required AdsPolicy policy,
     Widget? fallback,
+    ValueChanged<bool>? onLoadedChanged,
   }) {
     if (!policy.canShow(placement)) {
       return fallback ?? const SizedBox.shrink();
@@ -231,6 +225,7 @@ final class GoogleMobileAdsGateway implements AdsGateway {
     return _AdMobBannerWidget(
       adUnitId: adUnitId,
       fallback: fallback,
+      onLoadedChanged: onLoadedChanged,
     );
   }
 
@@ -270,14 +265,47 @@ final class GoogleMobileAdsGateway implements AdsGateway {
   }
 }
 
+class _PreviewBanner extends StatefulWidget {
+  const _PreviewBanner({required this.placementId, this.onLoadedChanged});
+
+  final String placementId;
+  final ValueChanged<bool>? onLoadedChanged;
+
+  @override
+  State<_PreviewBanner> createState() => _PreviewBannerState();
+}
+
+class _PreviewBannerState extends State<_PreviewBanner> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onLoadedChanged?.call(true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 50,
+    color: const Color(0x3300FF00),
+    alignment: Alignment.center,
+    child: Text(
+      'Preview Ad [${widget.placementId}]',
+      style: const TextStyle(fontSize: 12, color: Colors.white70),
+    ),
+  );
+}
+
 class _AdMobBannerWidget extends StatefulWidget {
   const _AdMobBannerWidget({
     required this.adUnitId,
     this.fallback,
+    this.onLoadedChanged,
   });
 
   final String adUnitId;
   final Widget? fallback;
+  final ValueChanged<bool>? onLoadedChanged;
 
   @override
   State<_AdMobBannerWidget> createState() => _AdMobBannerWidgetState();
@@ -300,11 +328,15 @@ class _AdMobBannerWidgetState extends State<_AdMobBannerWidget> {
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          if (mounted) setState(() => _isLoaded = true);
+          if (!mounted) return;
+          setState(() => _isLoaded = true);
+          widget.onLoadedChanged?.call(true);
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
-          if (mounted) setState(() => _isLoaded = false);
+          if (!mounted) return;
+          setState(() => _isLoaded = false);
+          widget.onLoadedChanged?.call(false);
         },
       ),
     )..load();
@@ -338,6 +370,7 @@ class FactoryBannerAd extends StatelessWidget {
     required this.placement,
     required this.policy,
     this.fallback,
+    this.onLoadedChanged,
   });
 
   final AdsGateway gateway;
@@ -346,11 +379,16 @@ class FactoryBannerAd extends StatelessWidget {
   final AdsPolicy policy;
   final Widget? fallback;
 
+  /// Called with `true` when an ad is on screen and `false` if loading fails,
+  /// so the host can reserve space only while there is something to show.
+  final ValueChanged<bool>? onLoadedChanged;
+
   @override
   Widget build(BuildContext context) => gateway.buildBanner(
-        adUnitId: adUnitId,
-        placement: placement,
-        policy: policy,
-        fallback: fallback,
-      );
+    adUnitId: adUnitId,
+    placement: placement,
+    policy: policy,
+    fallback: fallback,
+    onLoadedChanged: onLoadedChanged,
+  );
 }

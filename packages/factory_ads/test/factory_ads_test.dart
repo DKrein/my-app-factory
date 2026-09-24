@@ -5,9 +5,18 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('AdmobTestUnits', () {
     test('contains valid test ad unit IDs', () {
-      expect(AdmobTestUnits.androidBanner, contains('ca-app-pub-3940256099942544'));
-      expect(AdmobTestUnits.androidInterstitial, contains('ca-app-pub-3940256099942544'));
-      expect(AdmobTestUnits.androidRewarded, contains('ca-app-pub-3940256099942544'));
+      expect(
+        AdmobTestUnits.androidBanner,
+        contains('ca-app-pub-3940256099942544'),
+      );
+      expect(
+        AdmobTestUnits.androidInterstitial,
+        contains('ca-app-pub-3940256099942544'),
+      );
+      expect(
+        AdmobTestUnits.androidRewarded,
+        contains('ca-app-pub-3940256099942544'),
+      );
       expect(AdmobTestUnits.iosBanner, contains('ca-app-pub-3940256099942544'));
     });
   });
@@ -76,10 +85,15 @@ void main() {
         policy: const AlwaysShowAdsPolicy(),
       );
       expect(allowed, isTrue);
-      expect(gateway.shownInterstitials, contains(AdPlacement.interstitialAfterAction));
+      expect(
+        gateway.shownInterstitials,
+        contains(AdPlacement.interstitialAfterAction),
+      );
     });
 
-    testWidgets('FactoryBannerAd builds properly with PreviewAdsGateway', (tester) async {
+    testWidgets('FactoryBannerAd builds properly with PreviewAdsGateway', (
+      tester,
+    ) async {
       final gateway = PreviewAdsGateway();
 
       // When policy allows

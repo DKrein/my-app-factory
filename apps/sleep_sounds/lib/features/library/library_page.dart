@@ -42,7 +42,9 @@ class _LibraryPageState extends State<LibraryPage> {
   static const _activeCardColor = Color(0xFF1E3550);
   static const _activeBorderColor = Color(0xFF8EC5F5);
   static const _pagePadding = EdgeInsets.symmetric(horizontal: 24);
+  static const _bannerHeight = 50.0;
   final favorites = <String>{};
+  bool _bannerLoaded = false;
   StreamSubscription<PurchaseEvent>? _purchaseSubscription;
 
   @override
@@ -125,122 +127,136 @@ class _LibraryPageState extends State<LibraryPage> {
       backgroundColor: Colors.transparent,
       body: StarfieldBackground(
         child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  children: [
-                    Padding(
-                      padding: _pagePadding,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Time to capy-nap',
-                              style: Theme.of(context).textTheme.displaySmall,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: _openSettings,
-                            icon: const Icon(Icons.tune_outlined),
-                            tooltip: 'Settings',
-                          ),
-                        ],
-                      ),
+          child: ListenableBuilder(
+            listenable: widget.billing.entitlements,
+            builder: (context, _) {
+              final showAds = !widget.billing.entitlements.has(
+                FactoryEntitlements.removeAds,
+              );
+              final reservedForBanner = showAds && _bannerLoaded
+                  ? _bannerHeight
+                  : 0.0;
+              return Stack(
+                children: [
+                  ListView(
+                    padding: EdgeInsets.only(
+                      top: 24,
+                      bottom: 24 + reservedForBanner,
                     ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: _pagePadding,
-                      child: Text(
-                        'Capy Timer',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ListenableBuilder(
-                      listenable: widget.playback,
-                      builder: (context, _) => Column(
-                        children: [
-                          SizedBox(
-                            height: 64,
-                            child: DurationCarousel(
-                              selectedMinutes: widget.playback.timerMinutes,
-                              onSelected: widget.playback.setTimer,
-                            ),
-                          ),
-                          if (widget.playback.hasSounds)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
+                    children: [
+                      Padding(
+                        padding: _pagePadding,
+                        child: Row(
+                          children: [
+                            Expanded(
                               child: Text(
-                                widget.playback.playing
-                                    ? 'Stopping in ${formatSleepRemaining(widget.playback.remainingSeconds)}'
-                                    : 'Paused',
-                                style: const TextStyle(
-                                  color: FactoryColors.mist,
-                                  fontWeight: FontWeight.w600,
+                                'Time to capy-nap',
+                                style: Theme.of(context).textTheme.displaySmall,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: _openSettings,
+                              icon: const Icon(Icons.tune_outlined),
+                              tooltip: 'Settings',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: _pagePadding,
+                        child: Text(
+                          'Capy Timer',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ListenableBuilder(
+                        listenable: widget.playback,
+                        builder: (context, _) => Column(
+                          children: [
+                            SizedBox(
+                              height: 64,
+                              child: DurationCarousel(
+                                selectedMinutes: widget.playback.timerMinutes,
+                                onSelected: widget.playback.setTimer,
+                              ),
+                            ),
+                            if (widget.playback.hasSounds)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  widget.playback.playing
+                                      ? 'Stopping in ${formatSleepRemaining(widget.playback.remainingSeconds)}'
+                                      : 'Paused',
+                                  style: const TextStyle(
+                                    color: FactoryColors.mist,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    Padding(
-                      padding: _pagePadding,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'To wind down',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                          ),
-                          _playPauseButton(),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: _pagePadding,
-                      child: ListenableBuilder(
-                        listenable: widget.playback,
-                        builder: (context, _) => GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: sounds.length + 1,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                childAspectRatio: .85,
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 10,
+                      const SizedBox(height: 24),
+                      Padding(
+                        padding: _pagePadding,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'To wind down',
+                                style: Theme.of(context).textTheme.titleLarge,
                               ),
-                          itemBuilder: (_, i) =>
-                              i == 0 ? _favoritesCard() : _card(sounds[i - 1]),
+                            ),
+                            _playPauseButton(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: _pagePadding,
+                        child: ListenableBuilder(
+                          listenable: widget.playback,
+                          builder: (context, _) => GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: sounds.length + 1,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  childAspectRatio: .85,
+                                  crossAxisSpacing: 10,
+                                  mainAxisSpacing: 10,
+                                ),
+                            itemBuilder: (_, i) => i == 0
+                                ? _favoritesCard()
+                                : _card(sounds[i - 1]),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (showAds)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: FactoryBannerAd(
+                          gateway: widget.ads,
+                          adUnitId: AppConfig.bannerAdUnitId,
+                          placement: AdPlacement.bannerHome,
+                          policy: adsPolicy,
+                          onLoadedChanged: (loaded) {
+                            if (mounted) setState(() => _bannerLoaded = loaded);
+                          },
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              ListenableBuilder(
-                listenable: widget.billing.entitlements,
-                builder: (context, _) {
-                  if (widget.billing.entitlements.has(
-                    FactoryEntitlements.removeAds,
-                  )) {
-                    return const SizedBox.shrink();
-                  }
-                  return FactoryBannerAd(
-                    gateway: widget.ads,
-                    adUnitId: AppConfig.bannerAdUnitId,
-                    placement: AdPlacement.bannerHome,
-                    policy: adsPolicy,
-                  );
-                },
-              ),
-            ],
+                ],
+              );
+            },
           ),
         ),
       ),
