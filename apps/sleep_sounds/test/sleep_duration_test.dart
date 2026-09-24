@@ -2,6 +2,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sleep_sounds/features/player/sleep_duration.dart';
 
 void main() {
+  test('offers Off and 15m to 12h, defaulting to 1h', () {
+    expect(sleepDurations.map((d) => d.label), [
+      'Off',
+      '15m',
+      '30m',
+      '1h',
+      '3h',
+      '6h',
+      '9h',
+      '12h',
+    ]);
+    expect(defaultSleepMinutes, 60);
+  });
+
   group('formatSleepRemaining', () {
     test('formats hours and minutes at or above one hour', () {
       expect(formatSleepRemaining(43200), equals('12h 00m'));

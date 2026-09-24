@@ -186,9 +186,11 @@ class _LibraryPageState extends State<LibraryPage> {
                               Padding(
                                 padding: const EdgeInsets.only(top: 8),
                                 child: Text(
-                                  widget.playback.playing
-                                      ? 'Stopping in ${formatSleepRemaining(widget.playback.remainingSeconds)}'
-                                      : 'Paused',
+                                  !widget.playback.playing
+                                      ? 'Paused'
+                                      : widget.playback.timerMinutes == 0
+                                      ? 'Playing'
+                                      : 'Stopping in ${formatSleepRemaining(widget.playback.remainingSeconds)}',
                                   style: const TextStyle(
                                     color: FactoryColors.mist,
                                     fontWeight: FontWeight.w600,

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'sleep_duration.dart';
 
 /// Horizontal snapping picker for the sleep timer duration, e.g.
-/// `1h  6h  [12h]  24h`. Tapping an item snaps it to the center and commits
+/// `30m  [1h]  3h  6h`. Tapping an item snaps it to the center and commits
 /// the selection; dragging snaps to the nearest item on release.
 class DurationCarousel extends StatefulWidget {
   const DurationCarousel({

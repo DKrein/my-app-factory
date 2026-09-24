@@ -16,17 +16,7 @@ Future<void> pumpPastSplash(WidgetTester tester) async {
 // jumping straight to a distant label (e.g. '12h' -> '30m') can tap a
 // widget that hasn't been built yet. Step through the adjacent, always-built
 // neighbor instead, exactly like a user swiping one position at a time.
-const _durationOrder = [
-  '15m',
-  '30m',
-  '1h',
-  '3h',
-  '6h',
-  '9h',
-  '12h',
-  '18h',
-  '24h',
-];
+const _durationOrder = ['Off', '15m', '30m', '1h', '3h', '6h', '9h', '12h'];
 
 Future<void> selectDuration(WidgetTester tester, String from, String to) async {
   var index = _durationOrder.indexOf(from);
@@ -248,16 +238,16 @@ void main() {
     ) async {
       await pumpApp(tester);
 
-      expect(find.text('12h'), findsOneWidget);
+      expect(find.text('1h'), findsOneWidget);
       expect(find.textContaining('Stopping in'), findsNothing);
 
       await tester.tap(find.text('Rain'));
       await tester.pump();
 
-      expect(find.textContaining('Stopping in 12h 00m'), findsOneWidget);
-
-      await selectDuration(tester, '12h', '1h');
       expect(find.textContaining('Stopping in 1h 00m'), findsOneWidget);
+
+      await selectDuration(tester, '1h', '3h');
+      expect(find.textContaining('Stopping in 3h 00m'), findsOneWidget);
 
       await tester.tap(find.text('Rain'));
       await tester.pump();
@@ -268,7 +258,7 @@ void main() {
       await tester.tap(find.text('Rain'));
       await tester.tap(find.text('Waves'));
       await tester.pump();
-      await selectDuration(tester, '12h', '30m');
+      await selectDuration(tester, '1h', '30m');
 
       expect(playingAssets, hasLength(2));
 
@@ -277,13 +267,29 @@ void main() {
       expect(playingAssets, isEmpty);
     });
 
+    testWidgets('Off keeps playing with no countdown', (tester) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('Rain'));
+      await tester.pump();
+      await selectDuration(tester, '1h', 'Off');
+
+      expect(find.text('Playing'), findsOneWidget);
+      expect(find.textContaining('Stopping in'), findsNothing);
+
+      await tester.pump(const Duration(hours: 13));
+
+      expect(playingAssets, hasLength(1));
+
+      await tester.tap(find.text('Rain'));
+      await tester.pump();
+    });
+
     testWidgets('counts down once per second after switching duration', (
       tester,
     ) async {
       await pumpApp(tester);
       await tester.tap(find.text('Rain'));
       await tester.pump();
-      await selectDuration(tester, '12h', '1h');
       await tester.pump(const Duration(seconds: 5));
 
       await selectDuration(tester, '1h', '30m');

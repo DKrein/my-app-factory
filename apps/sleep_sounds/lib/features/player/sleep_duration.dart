@@ -5,6 +5,7 @@ class SleepDuration {
 }
 
 const sleepDurations = <SleepDuration>[
+  SleepDuration(0, 'Off'),
   SleepDuration(15, '15m'),
   SleepDuration(30, '30m'),
   SleepDuration(60, '1h'),
@@ -12,11 +13,9 @@ const sleepDurations = <SleepDuration>[
   SleepDuration(360, '6h'),
   SleepDuration(540, '9h'),
   SleepDuration(720, '12h'),
-  SleepDuration(1080, '18h'),
-  SleepDuration(1440, '24h'),
 ];
 
-const defaultSleepMinutes = 720;
+const defaultSleepMinutes = 60;
 
 /// Formats remaining sleep-timer seconds for display: `'11h 59m'` at or above
 /// one hour, `'M:SS'` below it.
